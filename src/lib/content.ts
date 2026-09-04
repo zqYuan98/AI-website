@@ -20,6 +20,7 @@ export type WorkMeta = {
   placeholder: boolean;
   order: number;
   featured: boolean;
+  cover?: string;
 };
 
 export type WorkPost = WorkMeta & {
@@ -37,6 +38,7 @@ export type PostMeta = {
   readingTime: string;
   tags: string[];
   placeholder: boolean;
+  cover?: string;
 };
 
 export type BlogPost = PostMeta & {
@@ -134,6 +136,7 @@ export function getAllWork(): WorkPost[] {
       placeholder: asBoolean(data.placeholder, true),
       order: asNumber(data.order, 99),
       featured: asBoolean(data.featured, false),
+      cover: asString(data.cover) || undefined,
       background: pickSection(sections, ["背景/问题", "背景 / 问题", "背景"]),
       actions: pickSection(sections, ["我做了什么", "过程"]),
       outcome: pickSection(sections, ["结果与反思", "结果", "反思"]),
@@ -169,6 +172,7 @@ export function getAllPosts(): BlogPost[] {
       readingTime: asString(data.readingTime, ""),
       tags: asTags(data.tags),
       placeholder: asBoolean(data.placeholder, true),
+      cover: asString(data.cover) || undefined,
       body: content.trim(),
     } satisfies BlogPost;
   });
