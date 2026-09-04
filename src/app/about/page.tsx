@@ -1,38 +1,43 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Badge } from "@/components/badge";
 import { SectionHeading } from "@/components/section-heading";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "关于",
-  description: `关于 ${site.name}：努力成为一名产品经理，记录实践与思考。`,
+  description: `关于 ${site.displayName}（${site.realName}）：从算法工程师走向 AI 时代的产品经理。`,
 };
 
-const skills = [
-  { name: "问题定义与假设", level: "练习中" },
-  { name: "用户访谈与洞察整理", level: "练习中" },
-  { name: "原型与信息架构", level: "练习中" },
-  { name: "写作与结构化表达", level: "持续" },
-  { name: "基础数据分析意识", level: "学习中" },
-  { name: "跨角色沟通", level: "学习中" },
+const principles = [
+  "先确认问题，再选择 AI",
+  "先定义验收，再开始实现",
+  "模型负责语义，代码负责确定性，人负责风险与取舍",
+  "模型输出首先是候选，不自动等于业务事实",
+  "技术资产可以降低验证成本，但不能替代市场证据",
+  "一次交付应该让下一次更快、更稳、更便宜",
+  "允许停止，允许承认「不值得继续做」",
 ];
 
 const timeline = [
   {
-    period: "现在",
-    title: "系统练习产品基础功",
-    body: "用个人项目与公开写作积累可讲述的案例：假设验证、研究复盘、概念设计。",
+    period: "算法工程师",
+    title: "人脸识别、活体检测、工业视觉缺陷检测",
+    body: "在一线理解数据、设备、环境、阈值与人工流程如何共同决定 AI 能否使用。",
   },
   {
-    period: "近期",
-    title: "搭建个人品牌站",
-    body: "把作品与文章集中到 notvitamin.com，方便展示学习轨迹，而不是空泛简历关键词。",
+    period: "算法与平台工程化",
+    title: "天枢、灵析、OCR 替换、评测与部署",
+    body: "从做一个模型，到管理算法的生产、部署、回退和复用。",
   },
   {
-    period: "接下来",
-    title: "更多真实反馈",
-    body: "在合规与诚实的前提下，把示例内容逐步替换为真实项目经历与更扎实的研究。",
+    period: "研发中台负责人",
+    title: "平台、算法、软硬件、团队与交付",
+    body: "把投入方向、验收、产品化与团队主航道纳入同一套决策。",
+  },
+  {
+    period: "AI 时代的产品经理",
+    title: "问题发现、人机边界、验收与产品经营",
+    body: "让 AI 从会演示，到能进入真实工作并被验收。",
   },
 ];
 
@@ -40,25 +45,23 @@ export default function AboutPage() {
   return (
     <div className="container-page py-16 sm:py-20">
       <SectionHeading
-        eyebrow="About"
-        title={`你好，我是 ${site.name}`}
-        description={site.description}
+        title={`你好，我是${site.displayName}`}
+        description="电力行业研发中台负责人，一名从视觉算法工程师走向 AI 产品经理的实践者。"
       />
 
       <section className="mt-12 grid gap-10 lg:grid-cols-12">
         <div className="space-y-5 text-base leading-8 text-foreground-muted lg:col-span-7">
           <p>
-            我正在努力成为一名产品经理。比起堆砌职位头衔，我更在意把模糊问题拆清楚、用证据修正判断，并把过程写成别人能读懂的文字。
+            我是{site.realName}，也叫{site.displayName}。目前在一家电力软硬件集成公司负责研发中台。
           </p>
           <p>
-            这个站点是我的公开练习场：作品区放案例与概念稿，博客区放学习笔记。标有「示例内容」的条目用于展示站点结构与写作方式，
-            <strong className="font-medium text-foreground">
-              请勿当作已验证的商业成果
-            </strong>
-            。
+            我的职业起点是算法工程师，做过人脸识别、活体检测和工业视觉缺陷检测。后来开始负责算法平台、应用平台、OCR 自研替换，以及更多与软件、硬件和交付相关的工作。
           </p>
           <p>
-            如果你也在学产品、做研究或写东西，欢迎通过 GitHub 打招呼，聊聊一次具体的问题定义或复盘。
+            做得越多，我越觉得 AI 产品最难的部分不只是模型。真实问题是否成立、数据能否获取、错误如何处理、谁来确认、产品如何验收、一次项目能不能被下一个项目复用，这些事情常常更决定结果。
+          </p>
+          <p>
+            所以我把自己的长期方向定义为「AI 时代的产品经理」。我希望自己既保留技术判断，也能把业务、用户、工程和组织连接起来，让 AI 真正进入工作。
           </p>
         </div>
         <aside className="card-surface h-fit p-6 lg:col-span-5">
@@ -67,8 +70,12 @@ export default function AboutPage() {
           </p>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-foreground-subtle">方向</dt>
-              <dd className="text-right font-medium">产品 / 研究 / 写作</dd>
+              <dt className="text-foreground-subtle">主张</dt>
+              <dd className="text-right font-medium">{site.claim}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-foreground-subtle">关键词</dt>
+              <dd className="text-right font-medium">{site.keywords.join(" · ")}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-foreground-subtle">站点</dt>
@@ -82,66 +89,55 @@ export default function AboutPage() {
         </aside>
       </section>
 
-      <section className="mt-20">
-        <SectionHeading
-          eyebrow="Skills"
-          title="能力地图"
-          description="坦诚标注当前阶段：多数仍在刻意练习，而不是宣称精通。"
-        />
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {skills.map((skill) => (
-            <li
-              key={skill.name}
-              className="card-surface flex items-center justify-between gap-3 px-4 py-3.5"
-            >
-              <span className="text-sm font-medium">{skill.name}</span>
-              <Badge tone="accent">{skill.level}</Badge>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="mt-20">
-        <SectionHeading eyebrow="Timeline" title="近况时间线" />
+      <section className="mt-16">
+        <h2 className="text-2xl font-semibold tracking-tight">职业路径</h2>
         <ol className="mt-8 space-y-6 border-l border-line pl-6">
           {timeline.map((item) => (
-            <li key={item.title} className="relative">
-              <span className="absolute top-1.5 -left-[1.9rem] h-3 w-3 rounded-full border-2 border-accent bg-background" />
-              <p className="text-xs font-medium tracking-wide text-accent">
+            <li key={item.period} className="relative">
+              <span className="absolute -left-[1.7rem] top-1.5 h-3 w-3 rounded-full border-2 border-accent bg-background" />
+              <p className="text-xs font-medium tracking-[0.14em] text-accent uppercase">
                 {item.period}
               </p>
               <h3 className="mt-1 text-lg font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm leading-7 text-foreground-muted">
-                {item.body}
-              </p>
+              <p className="mt-2 text-sm leading-7 text-foreground-muted">{item.body}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section
-        id="contact"
-        className="mt-20 scroll-mt-24 rounded-[var(--radius-card)] border border-line bg-accent-soft/60 p-8 sm:p-10"
-      >
-        <SectionHeading
-          eyebrow="Contact"
-          title="联系我"
-          description="目前优先通过 GitHub 交流。请尽量带上具体语境：你在解什么问题、卡在哪一步。"
-        />
-        <div className="mt-8 flex flex-wrap gap-3">
+      <section className="mt-16">
+        <h2 className="text-2xl font-semibold tracking-tight">工作原则</h2>
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+          {principles.map((item) => (
+            <li
+              key={item}
+              className="rounded-[var(--radius-card)] border border-line bg-background-elevated px-4 py-3 text-sm leading-6 text-foreground-muted"
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="contact" className="mt-16 scroll-mt-24 card-surface p-8">
+        <h2 className="text-2xl font-semibold tracking-tight">联系</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-foreground-muted">
+          如果你也在做行业 AI、产品化、Agent 交付或个人数字产品，可以带着一个具体问题来找我。
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
           <a
             href={site.social.github}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-accent-contrast transition-colors hover:bg-accent-hover"
+            className="inline-flex h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-accent-contrast hover:bg-accent-hover"
           >
-            打开 GitHub
+            GitHub · {site.githubUser}
           </a>
           <Link
             href="/work"
-            className="inline-flex h-11 items-center rounded-full border border-line bg-background-elevated px-5 text-sm font-medium transition-colors hover:border-accent/40 hover:text-accent"
+            className="inline-flex h-11 items-center rounded-full border border-line px-5 text-sm font-medium text-foreground-muted hover:border-accent/40 hover:text-accent"
           >
-            先看看作品
+            先看作品
           </Link>
         </div>
       </section>
