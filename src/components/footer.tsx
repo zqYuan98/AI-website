@@ -11,7 +11,7 @@ export function Footer() {
             <span className="text-accent">.</span>
           </p>
           <p className="mt-3 max-w-md text-sm leading-7 text-foreground-muted">
-            {site.tagline} 欢迎一起讨论产品、研究与写作。
+            {site.tagline}
           </p>
         </div>
         <div className="md:col-span-3">

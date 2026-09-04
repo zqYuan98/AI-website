@@ -5,7 +5,7 @@ import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "关于",
-  description: `关于 ${site.displayName}（${site.realName}）：从算法工程师走向 AI 时代的产品经理。`,
+  description: `关于${site.displayName}：${site.tagline}`,
 };
 
 const principles = [
@@ -47,22 +47,19 @@ export default function AboutPage() {
       <SectionHeading
         level={1}
         title={`你好，我是${site.displayName}`}
-        description="电力行业研发中台负责人，一名从视觉算法工程师走向 AI 产品经理的实践者。"
+        description={site.tagline}
       />
 
       <section className="mt-12 grid gap-10 lg:grid-cols-12">
         <div className="space-y-5 text-base leading-8 text-foreground-muted lg:col-span-7">
           <p>
-            我是{site.realName}，也叫{site.displayName}。目前在一家电力软硬件集成公司负责研发中台。
+            职业起点是算法工程师，做过人脸识别、活体检测和工业视觉缺陷检测。后来，工作逐渐延伸到算法平台、应用平台、OCR 自研替换，以及软件、硬件和项目交付。
           </p>
           <p>
-            我的职业起点是算法工程师，做过人脸识别、活体检测和工业视觉缺陷检测。后来开始负责算法平台、应用平台、OCR 自研替换，以及更多与软件、硬件和交付相关的工作。
+            这些经历让我越来越确定：AI 产品最难的部分往往不在模型本身。问题是否真实、数据能否稳定获取、错误如何被发现和接管、结果由谁确认、产品怎样验收，以及一次交付能否沉淀为下一次可复用的能力，才真正决定它能不能落地。
           </p>
           <p>
-            做得越多，我越觉得 AI 产品最难的部分不只是模型。真实问题是否成立、数据能否获取、错误如何处理、谁来确认、产品如何验收、一次项目能不能被下一个项目复用，这些事情常常更决定结果。
-          </p>
-          <p>
-            所以我把自己的长期方向定义为「AI 时代的产品经理」。我希望自己既保留技术判断，也能把业务、用户、工程和组织连接起来，让 AI 真正进入工作。
+            因此，我把长期方向定义为「AI 时代的产品经理」：保留对技术和能力边界的判断，同时连接业务、用户、工程与组织，让 AI 不只停留在演示中，而是真正进入工作、被使用、被验证并持续产生价值。
           </p>
         </div>
         <aside className="card-surface h-fit p-6 lg:col-span-5">

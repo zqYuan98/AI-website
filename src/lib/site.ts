@@ -1,17 +1,14 @@
 export const site = {
   name: "Vitamin",
   displayName: "维他命",
-  realName: "袁中群",
   githubUser: "zqYuan98",
   githubAlias: "YUANzq",
   url: "https://notvitamin.com",
   eyebrow: "HELLO, I'M VITAMIN",
   headline: "你好，我是维他命。",
   claim: "从让模型看见，到让 AI 真正工作。",
-  tagline:
-    "我的职业起点是算法工程师，做过人脸识别、活体检测和工业视觉缺陷检测。现在负责电力行业的算法、平台与产品工作，也在持续构建自己的产品、知识系统和数字实验。",
-  description:
-    "维他命（袁中群）的个人品牌站：作品、思考、实验，以及从算法到产品的真实交付。",
+  tagline: "从视觉算法走向 AI 产品，长期关注技术如何进入真实工作。",
+  description: "维他命的个人品牌站：从视觉算法走向 AI 产品，记录技术如何进入真实工作。",
   keywords: ["技术根基", "产品判断", "真实交付"] as const,
   social: {
     github: "https://github.com/zqYuan98",
