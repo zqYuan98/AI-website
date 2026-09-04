@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { PlaceholderBadge } from "@/components/badge";
 import type { WorkMeta } from "@/lib/content";
@@ -17,13 +18,22 @@ export function WorkCard({ work }: { work: WorkMeta }) {
       href={`/work/${work.slug}`}
       className="card-surface card-lift group flex h-full flex-col overflow-hidden"
     >
-      <div
-        className={`relative h-36 bg-gradient-to-br ${gradient}`}
-        aria-hidden="true"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgb(255_255_255_/0.28),transparent_45%)]" />
-        <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between gap-2">
-          <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+      <div className="relative h-44 overflow-hidden bg-background-subtle">
+        {work.cover ? (
+          <Image
+            src={work.cover}
+            alt=""
+            fill
+            unoptimized
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
+        ) : (
+          <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+        <div className="absolute right-3 bottom-3 left-3 flex items-center justify-between gap-2">
+          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-navy-900 backdrop-blur-sm dark:bg-black/50 dark:text-white">
             {work.role}
           </span>
           {work.placeholder ? <PlaceholderBadge /> : null}
@@ -39,13 +49,10 @@ export function WorkCard({ work }: { work: WorkMeta }) {
           </p>
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-          {work.period ? (
-            <span className="text-xs text-foreground-subtle">{work.period}</span>
-          ) : null}
           {work.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-background-subtle px-2 py-0.5 text-xs text-foreground-muted"
+              className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs text-accent"
             >
               {tag}
             </span>
