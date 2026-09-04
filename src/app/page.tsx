@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { PostCard } from "@/components/post-card";
+import { PlaceholderBadge } from "@/components/badge";
 import { SectionHeading } from "@/components/section-heading";
 import { WorkCard } from "@/components/work-card";
-import { getFeaturedWork, getLatestPosts } from "@/lib/content";
+import { formatDate, getFeaturedWork, getLatestPosts } from "@/lib/content";
 import { site } from "@/lib/site";
 
 export default function HomePage() {
@@ -12,53 +12,54 @@ export default function HomePage() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-line">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-        >
-          <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-brand-400/30 blur-3xl dark:bg-brand-500/20" />
-          <div className="absolute top-32 -left-20 h-80 w-80 rounded-full bg-violet-accent/20 blur-3xl dark:bg-violet-accent/15" />
-          <div className="absolute right-[12%] bottom-0 h-56 w-56 rounded-full bg-cyan-400/20 blur-3xl dark:bg-cyan-400/10" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgb(59_130_246_/_0.18),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgb(124_58_237_/_0.12),transparent_50%)] dark:bg-[radial-gradient(ellipse_at_top_right,rgb(96_165_250_/_0.16),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgb(167_139_250_/_0.12),transparent_50%)]" />
+          <div className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(to_right,rgb(15_23_42_/_0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(15_23_42_/_0.04)_1px,transparent_1px)] [background-size:64px_64px] dark:opacity-20" />
         </div>
 
-        <div className="container-page relative grid items-center gap-12 py-20 lg:grid-cols-12 lg:py-28">
-          <div className="animate-rise lg:col-span-7">
-            <p className="text-xs font-semibold tracking-[0.22em] text-accent uppercase">
+        <div className="container-page relative grid items-center gap-10 py-16 sm:py-20 lg:grid-cols-12 lg:gap-8 lg:py-24">
+          <div className="animate-rise lg:col-span-6 xl:col-span-6">
+            <p className="text-xs font-semibold tracking-[0.24em] text-accent uppercase">
               {site.eyebrow}
             </p>
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.15]">
+            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.4rem] lg:leading-[1.12]">
               {site.headline}
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-8 text-foreground-muted sm:text-lg">
+            <p className="mt-5 max-w-lg text-base leading-8 text-foreground-muted sm:text-lg">
               {site.tagline}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/work"
-                className="inline-flex h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-accent-contrast shadow-[var(--shadow-soft)] transition-colors hover:bg-accent-hover"
+                className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-medium text-accent-contrast shadow-[var(--shadow-soft)] transition-colors hover:bg-accent-hover"
               >
                 查看我的作品
               </Link>
               <Link
                 href="/about"
-                className="inline-flex h-11 items-center rounded-full border border-line bg-background-elevated px-5 text-sm font-medium text-foreground transition-colors hover:border-accent/40 hover:text-accent"
+                className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground-muted transition-colors hover:text-accent"
               >
                 了解更多
+                <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
+                  →
+                </span>
               </Link>
             </div>
           </div>
 
-          <div className="animate-rise animate-delay-2 relative lg:col-span-5">
-            <div className="relative mx-auto aspect-square max-w-md">
-              <div className="absolute inset-[8%] rounded-[2rem] border border-line/80 bg-background-elevated/70 shadow-[var(--shadow-lift)] backdrop-blur-sm" />
-              <div className="absolute inset-[18%] rounded-full bg-gradient-to-br from-brand-400 via-violet-accent to-cyan-400 opacity-90 blur-2xl" />
-              <div className="absolute inset-[28%] rounded-full bg-gradient-to-tr from-brand-600 to-violet-accent shadow-[var(--shadow-glow)]" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="rounded-2xl border border-white/30 bg-white/10 px-5 py-4 text-center text-white shadow-lg backdrop-blur-md dark:border-white/10">
-                  <p className="text-xs tracking-[0.2em] uppercase opacity-80">
+          <div className="animate-rise animate-delay-2 relative lg:col-span-6">
+            <div className="relative mx-auto aspect-[5/4] w-full max-w-lg lg:max-w-none">
+              <div className="absolute inset-0 rounded-[1.75rem] border border-line/70 bg-background-elevated/80 shadow-[var(--shadow-lift)] backdrop-blur-sm" />
+              <div className="absolute inset-[10%] rounded-full bg-gradient-to-br from-brand-300 via-brand-500 to-violet-accent opacity-90 blur-2xl" />
+              <div className="absolute inset-[22%] rounded-full bg-gradient-to-tr from-[#2563eb] via-[#6366f1] to-[#7c3aed] shadow-[var(--shadow-glow)]" />
+              <div className="absolute inset-[18%] rounded-full border border-white/25 dark:border-white/10" />
+              <div className="absolute inset-[12%] rounded-full border border-white/10 dark:border-white/5" />
+              <div className="absolute inset-0 flex items-center justify-center p-6">
+                <div className="rounded-2xl border border-white/35 bg-white/15 px-6 py-5 text-center text-white shadow-lg backdrop-blur-md dark:border-white/15 dark:bg-white/10">
+                  <p className="text-[11px] font-medium tracking-[0.22em] uppercase opacity-85">
                     Product · Research · Writing
                   </p>
-                  <p className="mt-2 text-lg font-semibold">{site.name}</p>
+                  <p className="mt-2 text-xl font-semibold tracking-tight">{site.name}</p>
                 </div>
               </div>
             </div>
@@ -72,7 +73,7 @@ export default function HomePage() {
           title="精选作品"
           description="目前多为个人练习与概念稿，已用「示例内容」标明；欢迎当作思考过程来看。"
           href="/work"
-          linkLabel="全部作品"
+          linkLabel="查看全部作品"
         />
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {featured.map((work, index) => (
@@ -93,13 +94,39 @@ export default function HomePage() {
             title="最近在写"
             description="关于学习产品、写作与把事情做出来的笔记。"
             href="/blog"
-            linkLabel="全部文章"
+            linkLabel="查看全部博客"
           />
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-8 divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-background-elevated shadow-[var(--shadow-soft)]">
             {posts.map((post) => (
-              <PostCard key={post.slug} post={post} />
+              <li key={post.slug}>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="flex flex-col gap-3 px-5 py-5 transition-colors hover:bg-background-subtle sm:flex-row sm:items-center sm:gap-6 sm:px-6"
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                    <span className="text-sm font-semibold">文</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate text-base font-semibold tracking-tight text-foreground">
+                        {post.title}
+                      </h3>
+                      {post.placeholder ? <PlaceholderBadge /> : null}
+                    </div>
+                    <p className="mt-1 line-clamp-1 text-sm text-foreground-muted">
+                      {post.summary}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-xs text-foreground-subtle sm:text-right">
+                    <time dateTime={post.date}>{formatDate(post.date)}</time>
+                    {post.readingTime ? (
+                      <p className="mt-1">{post.readingTime}</p>
+                    ) : null}
+                  </div>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
     </>

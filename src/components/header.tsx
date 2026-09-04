@@ -34,16 +34,14 @@ export function Header() {
           href="/"
           className="group inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-tight text-foreground"
         >
-          <span className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-accent-soft ring-1 ring-line/70">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.svg"
-              alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 object-contain"
-            />
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain"
+          />
           <span>
             {site.name}
             <span className="text-accent">.</span>
@@ -80,7 +78,7 @@ export function Header() {
           <ThemeToggle />
           <Link
             href={contactHref}
-            className="hidden h-10 items-center rounded-full bg-accent px-4 text-sm font-medium text-accent-contrast shadow-[var(--shadow-soft)] transition-colors duration-200 hover:bg-accent-hover md:inline-flex"
+            className="hidden h-10 items-center rounded-full border border-accent px-4 text-sm font-medium text-accent transition-colors duration-200 hover:bg-accent-soft md:inline-flex"
           >
             联系我
           </Link>
