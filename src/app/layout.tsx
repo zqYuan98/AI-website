@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="zh-CN"
@@ -44,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider>
           <Header />
-          <main className="flex-1">{children}</main>
+          <main className={'flex-1'}>{children}</main>
           <Footer />
         </ThemeProvider>
       </body>
