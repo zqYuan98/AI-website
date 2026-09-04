@@ -7,7 +7,7 @@ tags:
   - AI 交付
   - 工作系统
   - 产品判断
-cover: /blog/user-research.svg
+cover: /images/home/blog-research.png
 placeholder: false
 ---
 

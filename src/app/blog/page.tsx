@@ -15,6 +15,7 @@ export default function BlogIndexPage() {
   return (
     <div className="container-page py-16 sm:py-20">
       <SectionHeading
+        level={1}
         title="博客"
         description="记录 AI 时代产品判断、交付方法与阶段性思考。"
       />

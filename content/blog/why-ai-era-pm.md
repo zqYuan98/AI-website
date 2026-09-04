@@ -7,7 +7,7 @@ tags:
   - 产品经理
   - AI
   - 职业路径
-cover: /blog/zero-to-one.svg
+cover: /images/home/blog-zero-to-one.png
 placeholder: false
 ---
 

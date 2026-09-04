@@ -8,7 +8,7 @@ tags:
   - 人脸识别
   - 工业视觉
 accent: violet
-cover: /work/user-research.svg
+cover: /images/home/work-user-research.png
 placeholder: false
 order: 2
 featured: true

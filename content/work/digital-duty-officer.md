@@ -8,7 +8,7 @@ tags:
   - Agent
   - 工作闭环
 accent: blue
-cover: /work/zero-to-one.svg
+cover: /images/home/work-zero-to-one.png
 placeholder: false
 order: 1
 featured: true

@@ -14,13 +14,14 @@ export default function WorkIndexPage() {
   return (
     <div className="container-page py-16 sm:py-20">
       <SectionHeading
+        level={1}
         eyebrow="Work"
         title="作品与案例"
         description="以下内容多为个人练习与概念稿，标有「示例内容」的条目用于展示思考过程，不代表已验证的商业结果。"
       />
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {works.map((work) => (
-          <WorkCard key={work.slug} work={work} />
+        {works.map((work, index) => (
+          <WorkCard key={work.slug} work={work} eager={index === 0} />
         ))}
       </div>
     </div>

@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { contactHref, nav, site } from "@/lib/site";
 
 export function Header() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  return <HeaderForPath key={pathname} pathname={pathname} />;
+}
+
+function HeaderForPath({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -28,11 +28,11 @@ export function Header() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-background/80 backdrop-blur-xl">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
+    <header className="site-header sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur-md">
+      <div className="container-page grid h-[60px] grid-cols-[1fr_auto] items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
         <Link
           href="/"
-          className="text-[17px] font-semibold tracking-tight text-foreground"
+          className="justify-self-start text-[24px] font-bold tracking-[-0.045em] text-[#07175c]"
         >
           {site.name}
           <span className="text-accent">.</span>
@@ -40,7 +40,7 @@ export function Header() {
 
         <nav
           aria-label="主导航"
-          className="hidden items-center gap-1 md:flex"
+          className="hidden h-full items-center gap-9 md:flex"
         >
           {nav.map((item) => {
             const active =
@@ -51,11 +51,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-full px-3.5 py-2 text-sm transition-colors duration-200 ${
-                  active
-                    ? "bg-accent-soft font-medium text-accent"
-                    : "text-foreground-muted hover:bg-background-subtle hover:text-foreground"
-                }`}
+                className={`site-nav-link ${active ? "is-active" : ""}`}
                 aria-current={active ? "page" : undefined}
               >
                 {item.label}
@@ -64,17 +60,16 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+        <div className="flex items-center justify-self-end gap-2">
           <Link
             href={contactHref}
-            className="hidden h-10 items-center rounded-full border border-accent px-4 text-sm font-medium text-accent transition-colors duration-200 hover:bg-accent-soft md:inline-flex"
+            className="hidden h-8 items-center rounded-md border border-accent px-4 text-[13px] font-medium text-accent transition-colors duration-200 hover:bg-accent-soft md:inline-flex"
           >
             联系我
           </Link>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-background-elevated text-foreground md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-white text-[#07175c] md:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((value) => !value)}
@@ -88,7 +83,7 @@ export function Header() {
       {open ? (
         <div
           id="mobile-nav"
-          className="border-t border-line bg-background md:hidden"
+          className="border-t border-line bg-white md:hidden"
         >
           <nav
             aria-label="移动端导航"
@@ -103,10 +98,11 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setOpen(false)}
                   className={`rounded-xl px-3 py-3 text-base ${
                     active
                       ? "bg-accent-soft font-medium text-accent"
-                      : "text-foreground-muted"
+                      : "text-[#405077]"
                   }`}
                   aria-current={active ? "page" : undefined}
                 >
@@ -116,6 +112,7 @@ export function Header() {
             })}
             <Link
               href={contactHref}
+              onClick={() => setOpen(false)}
               className="mt-2 inline-flex h-11 items-center justify-center rounded-full bg-accent text-sm font-medium text-accent-contrast"
             >
               联系我

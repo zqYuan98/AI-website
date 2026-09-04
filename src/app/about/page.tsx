@@ -45,6 +45,7 @@ export default function AboutPage() {
   return (
     <div className="container-page py-16 sm:py-20">
       <SectionHeading
+        level={1}
         title={`你好，我是${site.displayName}`}
         description="电力行业研发中台负责人，一名从视觉算法工程师走向 AI 产品经理的实践者。"
       />

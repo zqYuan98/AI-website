@@ -1,11 +1,11 @@
 # 首页原图还原设计规范
 
-日期：2026-09-04  
+日期：2026-09-04
 状态：已获用户选择方案 1（在原站上精准改造）
 
 ## 目标
 
-在现有 Next.js 站点 `zqYuan98/AI-website` 上修改首页与全局导航视觉，使用用户上传到 `C:\Users\24830\Desktop\综合站` 的七张图片素材，还原参考图的白底、深海军蓝文字、蓝紫科技感和紧凑信息密度。桌面基准视口为 1392×928；同时保持手机和平板可用。
+在现有 Next.js 站点 `zqYuan98/AI-website` 上修改首页与全局导航视觉，使用用户上传到 `C:\Users\24830\Desktop\综合站` 的七张静态图片及一份 Hero 循环 GIF，还原参考图的白底、深海军蓝文字、蓝紫科技感和紧凑信息密度。桌面基准视口为 1392×928；同时保持手机和平板可用。
 
 本次是原站改造，不新建第二套站点，不把整张参考图当背景，不替换现有内容系统、路由或 Markdown 正文。
 
@@ -38,7 +38,7 @@
 - 页头高约 60px，纯白背景与细底边；导航当前项采用蓝色文字和短下划线，不使用胶囊底色。
 - Hero 高约 296px。左列约 52%，右列约 48%；标题约 46–50px、粗体、单行优先，正文约 16px。
 - 主按钮为亮蓝实心矩形圆角，次按钮为纯文字加右箭头。
-- Hero 球体约 430–480px 可视宽度，以 `object-fit: contain` 展示；仅做轻微漂浮动画，禁止额外文字卡片覆盖球体。
+- Hero 球体约 430–480px 可视宽度，以 `object-fit: cover` 裁入右侧画面；桌面端必须播放用户提供的循环 GIF，并叠加克制的整体漂浮与光晕呼吸，禁止额外文字卡片覆盖球体。`prefers-reduced-motion` 下改用静态 PNG。
 - 作品区为白底，三列等宽，间距约 22px。卡片圆角约 10px，1px 冷灰蓝描边和极轻阴影；图片维持 16:9。
 - 卡片正文紧凑：标题约 17px，摘要约 13px，标签为小号浅蓝/浅紫圆角块。
 - 博客区标题与“查看全部博客”同一行；三行列表共用一个描边容器。每行约 58–64px，缩略图约 72×46px，正文单行截断，日期和阅读时长横向排列在右侧。
@@ -58,15 +58,16 @@
 
 | 来源文件 | 目标路径 | 用途 |
 |---|---|---|
-| `Vitamin 个人站 Hero 主视觉-蓝紫渐变3D球体.png` | `/images/home/hero-orbit.png` | Hero 右侧主视觉 |
-| `作品封面-从0到1的产品练习.png` | `/images/home/work-zero-to-one.png` | `zero-to-one-product` |
-| `作品封面-一次用户研究复盘.png` | `/images/home/work-user-research.png` | `user-research-retro` |
-| `作品封面-个人效率工具概念.png` | `/images/home/work-productivity.png` | `personal-efficiency-concept` |
-| `博客缩略图-从0到1做产品.png` | `/images/home/blog-zero-to-one.png` | `how-i-learn-pm` |
-| `博客缩略图-用户研究方法.png` | `/images/home/blog-research.png` | `writing-as-thinking` |
-| `博客缩略图-结构化思维.png` | `/images/home/blog-structured-thinking.png` | `notes-on-ship-mindset` |
+| `vitamin-hero-glass-orb-loop.gif` | `/images/home/hero-orbit-loop.gif` | Hero 默认循环主视觉 |
+| `Vitamin 个人站 Hero 主视觉-蓝紫渐变3D球体.png` | `/images/home/hero-orbit.png` | Hero 静态/低动态降级 |
+| `作品封面-从0到1的产品练习.png` | `/images/home/work-zero-to-one.png` | `digital-duty-officer` |
+| `作品封面-一次用户研究复盘.png` | `/images/home/work-user-research.png` | `vision-algo-practice` |
+| `作品封面-个人效率工具概念.png` | `/images/home/work-productivity.png` | `algo-platform` |
+| `博客缩略图-从0到1做产品.png` | `/images/home/blog-zero-to-one.png` | `why-ai-era-pm` |
+| `博客缩略图-用户研究方法.png` | `/images/home/blog-research.png` | `from-seeing-to-working` |
+| `博客缩略图-结构化思维.png` | `/images/home/blog-structured-thinking.png` | `dont-start-with-agent` |
 
-博客图片按现有首页文章顺序分配；图片只承担视觉作用，不改变文章标题和内容。
+Markdown frontmatter 是卡片图片的唯一数据源；上表 slug 映射优先于源文件名语义。首页作品固定使用三个新版主案例（`digital-duty-officer`、`vision-algo-practice`、`algo-platform`）。博客图片分配给当前保留的三篇正式文章；图片只承担视觉作用，不改变文章标题和内容。首页和 `/work`、`/blog` 索引页均使用同一 frontmatter 图片路径，所有缩略图采用 `object-fit: cover`。
 
 ## 代码设计
 
@@ -83,7 +84,7 @@
 ## 行为与异常处理
 
 - 图片使用明确 `width`/`height` 或 `fill` + `sizes`，避免布局偏移。
-- 本地图片不存在时由构建阶段或浏览器 404 暴露；提交前通过文件清单和页面检查验证全部七张。
+- 本地图片不存在时由构建阶段或浏览器 404 暴露；提交前通过文件清单和页面检查验证全部八张。
 - 导航和卡片链接沿用 Next.js `Link`，不添加空 `href`。
 - Hero 动效在 `prefers-reduced-motion` 下禁用。
 - 移动菜单打开时继续支持 Escape 关闭和页面滚动锁定。
@@ -91,7 +92,7 @@
 ## 验收标准
 
 1. 1392×928 截图中，页头、Hero、三张作品卡和三行博客列表的层级、比例和色彩与参考图明显一致；不再出现现有的大型抽象渐变框和中央文字玻璃卡。
-2. 页面实际加载七张仓库内本地 PNG，不依赖 Lovart URL。
+2. 页面实际加载一份仓库内循环 GIF 和七张本地 PNG，不依赖 Lovart URL；开启减少动态效果时 Hero 使用静态 PNG。
 3. `/`、`/about`、`/work`、`/blog` 及已有详情路由正常打开。
 4. 390px 宽度无横向滚动，导航、卡片和博客列表可读可点。
 5. `bun run lint` 与 `bun run build` 通过。

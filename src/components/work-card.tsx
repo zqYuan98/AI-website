@@ -10,49 +10,46 @@ const accentMap: Record<string, string> = {
   green: "from-emerald-500/90 to-brand-700/70",
 };
 
-export function WorkCard({ work }: { work: WorkMeta }) {
+export function WorkCard({ work, eager = false }: { work: WorkMeta; eager?: boolean }) {
   const gradient = accentMap[work.accent] ?? accentMap.blue;
 
   return (
     <Link
       href={`/work/${work.slug}`}
-      className="card-surface card-lift group flex h-full flex-col overflow-hidden"
+      className="work-card card-surface card-lift group flex flex-col overflow-hidden"
     >
-      <div className="relative h-44 overflow-hidden bg-background-subtle">
+      <div className="work-card-media relative aspect-video overflow-hidden bg-background-subtle">
         {work.cover ? (
           <Image
             src={work.cover}
             alt=""
             fill
-            unoptimized
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={eager ? "high" : "auto"}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            sizes="(max-width: 768px) 100vw, 33vw"
+            sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
           />
         ) : (
           <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-        <div className="absolute right-3 bottom-3 left-3 flex items-center justify-between gap-2">
-          <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-navy-900 backdrop-blur-sm dark:bg-black/50 dark:text-white">
-            {work.role}
-          </span>
-          {work.placeholder ? <PlaceholderBadge /> : null}
-        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-5">
+      <div className="work-card-body flex flex-1 flex-col p-4">
         <div>
-          <h3 className="text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-accent">
-            {work.title}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-foreground-muted">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[17px] font-semibold tracking-tight text-[#07175c] transition-colors group-hover:text-accent">
+              {work.title}
+            </h3>
+            {work.placeholder ? <PlaceholderBadge /> : null}
+          </div>
+          <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#627093]">
             {work.summary}
           </p>
         </div>
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-2">
           {work.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs text-accent"
+              className="rounded-md bg-[#eef4ff] px-2 py-0.5 text-[11px] leading-4 text-[#1f5fd7] even:bg-[#f1edff] even:text-[#5944d6]"
             >
               {tag}
             </span>

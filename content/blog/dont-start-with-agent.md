@@ -7,7 +7,7 @@ tags:
   - Agent
   - 方法论
   - 企业 AI
-cover: /blog/structured-thinking.svg
+cover: /images/home/blog-structured-thinking.png
 placeholder: false
 ---
 

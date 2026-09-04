@@ -8,7 +8,7 @@ tags:
   - 工程化
   - OCR
 accent: teal
-cover: /work/efficiency-tool.svg
+cover: /images/home/work-productivity.png
 placeholder: false
 order: 3
 featured: true

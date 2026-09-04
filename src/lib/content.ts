@@ -66,6 +66,14 @@ function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
+function asDateString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  return "";
+}
+
 function asBoolean(value: unknown, fallback = false): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
@@ -168,7 +176,7 @@ export function getAllPosts(): BlogPost[] {
       slug: toSlug(file),
       title: asString(data.title, toSlug(file)),
       summary: asString(data.summary),
-      date: asString(data.date),
+      date: asDateString(data.date),
       readingTime: asString(data.readingTime, ""),
       tags: asTags(data.tags),
       placeholder: asBoolean(data.placeholder, true),
