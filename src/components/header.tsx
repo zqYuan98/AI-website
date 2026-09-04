@@ -32,20 +32,10 @@ export function Header() {
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link
           href="/"
-          className="group inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-tight text-foreground"
+          className="text-[17px] font-semibold tracking-tight text-foreground"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.svg"
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 object-contain"
-          />
-          <span>
-            {site.name}
-            <span className="text-accent">.</span>
-          </span>
+          {site.name}
+          <span className="text-accent">.</span>
         </Link>
 
         <nav

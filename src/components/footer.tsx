@@ -6,13 +6,9 @@ export function Footer() {
     <footer className="border-t border-line bg-background-subtle">
       <div className="container-page grid gap-10 py-14 md:grid-cols-12">
         <div className="md:col-span-6">
-          <p className="inline-flex items-center gap-2.5 text-lg font-semibold tracking-tight">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="" width={24} height={24} className="h-6 w-6 object-contain" />
-            <span>
-              {site.name}
-              <span className="text-accent">.</span>
-            </span>
+          <p className="text-lg font-semibold tracking-tight">
+            {site.name}
+            <span className="text-accent">.</span>
           </p>
           <p className="mt-3 max-w-md text-sm leading-7 text-foreground-muted">
             {site.tagline} 欢迎一起讨论产品、研究与写作。
