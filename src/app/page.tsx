@@ -60,12 +60,7 @@ export default function HomePage() {
                 className="home-hero-layer home-hero-base"
                 sizes="(max-width: 899px) calc(100vw + 72px), 620px"
               />
-              <picture className="home-hero-motion">
-                <source
-                  media="(prefers-reduced-motion: reduce)"
-                  srcSet="/images/home/hero-orbit.png"
-                  type="image/png"
-                />
+              <div className="home-hero-motion">
                 <Image
                   src="/images/home/hero-orbit-loop.gif"
                   alt="蓝紫渐变玻璃球体与环绕轨道动画"
@@ -76,7 +71,7 @@ export default function HomePage() {
                   className="home-hero-layer home-hero-image"
                   sizes="(max-width: 899px) calc(100vw + 72px), 620px"
                 />
-              </picture>
+              </div>
             </div>
           </div>
         </div>

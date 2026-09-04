@@ -293,16 +293,18 @@
     animation: hero-drift 8s ease-in-out 700ms infinite;
     animation-fill-mode: both;
     -webkit-mask-image: radial-gradient(
-      ellipse 90% 82% at 52% 48%,
-      #000 56%,
-      rgb(0 0 0 / 0.82) 73%,
-      transparent 100%
+      ellipse closest-side at 52% 48%,
+      #000 54%,
+      rgb(0 0 0 / 0.9) 66%,
+      rgb(0 0 0 / 0.48) 76%,
+      transparent 86%
     );
     mask-image: radial-gradient(
-      ellipse 90% 82% at 52% 48%,
-      #000 56%,
-      rgb(0 0 0 / 0.82) 73%,
-      transparent 100%
+      ellipse closest-side at 52% 48%,
+      #000 54%,
+      rgb(0 0 0 / 0.9) 66%,
+      rgb(0 0 0 / 0.48) 76%,
+      transparent 86%
     );
   }
 
@@ -544,23 +546,23 @@
     height: 78vw;
     min-height: 268px;
     max-height: 350px;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0,
+      #000 calc(100% - 88px),
+      transparent calc(100% - 16px)
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0,
+      #000 calc(100% - 88px),
+      transparent calc(100% - 16px)
+    );
   }
 
   .home-hero-media {
     width: calc(100vw + 72px);
     height: calc(78vw + 24px);
-    -webkit-mask-image: radial-gradient(
-      ellipse 70% 82% at 52% 48%,
-      #000 56%,
-      rgb(0 0 0 / 0.82) 73%,
-      transparent 100%
-    );
-    mask-image: radial-gradient(
-      ellipse 70% 82% at 52% 48%,
-      #000 56%,
-      rgb(0 0 0 / 0.82) 73%,
-      transparent 100%
-    );
   }
 
   .home-work-section,
