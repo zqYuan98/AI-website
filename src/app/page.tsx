@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 import { PostCard } from "@/components/post-card";
 import { SectionHeading } from "@/components/section-heading";
@@ -6,9 +6,21 @@ import { WorkCard } from "@/components/work-card";
 import { getFeaturedWork, getLatestPosts } from "@/lib/content";
 import { site } from "@/lib/site";
 
+const heroImageSizes = "(max-width: 899px) calc(100vw + 72px), 620px";
+const heroBaseImage = {
+  src: "/images/home/hero-orbit.png",
+  alt: "",
+  width: 2048,
+  height: 2048,
+  sizes: heroImageSizes,
+} as const;
+
 export default function HomePage() {
   const featured = getFeaturedWork(3);
   const posts = getLatestPosts(3);
+  const {
+    props: { sizes: reducedMotionSizes, srcSet: reducedMotionSrcSet },
+  } = getImageProps(heroBaseImage);
 
   return (
     <>
@@ -51,27 +63,29 @@ export default function HomePage() {
             <div className="home-hero-halo" aria-hidden="true" />
             <div className="home-hero-media">
               <Image
-                src="/images/home/hero-orbit.png"
+                {...heroBaseImage}
                 alt=""
-                width={2048}
-                height={2048}
                 loading="eager"
                 fetchPriority="high"
                 className="home-hero-layer home-hero-base"
-                sizes="(max-width: 899px) calc(100vw + 72px), 620px"
               />
-              <div className="home-hero-motion">
+              <picture className="home-hero-motion">
+                <source
+                  media="(prefers-reduced-motion: reduce)"
+                  srcSet={reducedMotionSrcSet}
+                  sizes={reducedMotionSizes}
+                />
                 <Image
                   src="/images/home/hero-orbit-loop.gif"
                   alt="蓝紫渐变玻璃球体与环绕轨道动画"
                   width={960}
                   height={960}
                   unoptimized
-                  loading="eager"
+                  loading="lazy"
                   className="home-hero-layer home-hero-image"
-                  sizes="(max-width: 899px) calc(100vw + 72px), 620px"
+                  sizes={heroImageSizes}
                 />
-              </div>
+              </picture>
             </div>
           </div>
         </div>
