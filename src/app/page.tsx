@@ -49,24 +49,35 @@ export default function HomePage() {
 
           <div className="home-hero-art animate-rise animate-delay-2 relative">
             <div className="home-hero-halo" aria-hidden="true" />
-            <picture className="home-hero-picture">
-              <source
-                media="(prefers-reduced-motion: reduce)"
-                srcSet="/images/home/hero-orbit.png"
-                type="image/png"
-              />
+            <div className="home-hero-media">
               <Image
-                src="/images/home/hero-orbit-loop.gif"
-                alt="蓝紫渐变玻璃球体与环绕轨道动画"
-                width={960}
-                height={960}
-                unoptimized
+                src="/images/home/hero-orbit.png"
+                alt=""
+                width={2048}
+                height={2048}
                 loading="eager"
                 fetchPriority="high"
-                className="home-hero-image"
-                sizes="(max-width: 899px) calc(100vw - 32px), 520px"
+                className="home-hero-layer home-hero-base"
+                sizes="(max-width: 899px) calc(100vw + 72px), 620px"
               />
-            </picture>
+              <picture className="home-hero-motion">
+                <source
+                  media="(prefers-reduced-motion: reduce)"
+                  srcSet="/images/home/hero-orbit.png"
+                  type="image/png"
+                />
+                <Image
+                  src="/images/home/hero-orbit-loop.gif"
+                  alt="蓝紫渐变玻璃球体与环绕轨道动画"
+                  width={960}
+                  height={960}
+                  unoptimized
+                  loading="eager"
+                  className="home-hero-layer home-hero-image"
+                  sizes="(max-width: 899px) calc(100vw + 72px), 620px"
+                />
+              </picture>
+            </div>
           </div>
         </div>
       </section>

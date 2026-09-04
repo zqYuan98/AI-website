@@ -38,7 +38,7 @@
 - 页头高约 60px，纯白背景与细底边；导航当前项采用蓝色文字和短下划线，不使用胶囊底色。
 - Hero 高约 296px。左列约 52%，右列约 48%；标题约 46–50px、粗体、单行优先，正文约 16px。
 - 主按钮为亮蓝实心矩形圆角，次按钮为纯文字加右箭头。
-- Hero 球体约 430–480px 可视宽度，以 `object-fit: cover` 裁入右侧画面；桌面端必须播放用户提供的循环 GIF，并叠加克制的整体漂浮与光晕呼吸，禁止额外文字卡片覆盖球体。`prefers-reduced-motion` 下改用静态 PNG。
+- Hero 球体约 430–480px 可视宽度，以 `object-fit: cover` 裁入右侧画面；静态 PNG 作为稳定底层，循环 GIF 以羽化边缘的动画层叠加其上，并配合克制的整体漂浮与独立椭圆光晕呼吸，禁止额外文字卡片覆盖球体。`prefers-reduced-motion` 下隐藏动画叠加层，仅保留静态 PNG。
 - 作品区为白底，三列等宽，间距约 22px。卡片圆角约 10px，1px 冷灰蓝描边和极轻阴影；图片维持 16:9。
 - 卡片正文紧凑：标题约 17px，摘要约 13px，标签为小号浅蓝/浅紫圆角块。
 - 博客区标题与“查看全部博客”同一行；三行列表共用一个描边容器。每行约 58–64px，缩略图约 72×46px，正文单行截断，日期和阅读时长横向排列在右侧。
@@ -58,8 +58,8 @@
 
 | 来源文件 | 目标路径 | 用途 |
 |---|---|---|
-| `vitamin-hero-glass-orb-loop.gif` | `/images/home/hero-orbit-loop.gif` | Hero 默认循环主视觉 |
-| `Vitamin 个人站 Hero 主视觉-蓝紫渐变3D球体.png` | `/images/home/hero-orbit.png` | Hero 静态/低动态降级 |
+| `vitamin-hero-glass-orb-loop.gif` | `/images/home/hero-orbit-loop.gif` | Hero 羽化动画叠加层 |
+| `Vitamin 个人站 Hero 主视觉-蓝紫渐变3D球体.png` | `/images/home/hero-orbit.png` | Hero 稳定底图及 reduced-motion 结果 |
 | `作品封面-从0到1的产品练习.png` | `/images/home/work-zero-to-one.png` | `digital-duty-officer` |
 | `作品封面-一次用户研究复盘.png` | `/images/home/work-user-research.png` | `vision-algo-practice` |
 | `作品封面-个人效率工具概念.png` | `/images/home/work-productivity.png` | `algo-platform` |
@@ -71,7 +71,7 @@ Markdown frontmatter 是卡片图片的唯一数据源；上表 slug 映射优�
 
 ## 代码设计
 
-- `src/app/page.tsx`：重组首页标记，使用 `next/image` 加载 Hero、作品封面和博客缩略图；数据仍来自 `getFeaturedWork(3)` 与 `getLatestPosts(3)`。
+- `src/app/page.tsx`：重组首页标记，使用 `next/image` 将静态 PNG 稳定底层与羽化 GIF 动画层组合为 Hero，并加载作品封面和博客缩略图；数据仍来自 `getFeaturedWork(3)` 与 `getLatestPosts(3)`。
 - `src/components/header.tsx`：调整导航视觉与间距，保留当前路径高亮、移动菜单和联系链接；移除可见主题按钮。
 - `src/components/work-card.tsx`：增加可选 `cover` 属性并渲染本地图片；保持详情链接和元数据渲染。
 - `src/lib/content.ts`：若采用内容驱动映射，则为作品/博客元数据增加可选图片字段；不改变读取与排序语义。
@@ -86,13 +86,13 @@ Markdown frontmatter 是卡片图片的唯一数据源；上表 slug 映射优�
 - 图片使用明确 `width`/`height` 或 `fill` + `sizes`，避免布局偏移。
 - 本地图片不存在时由构建阶段或浏览器 404 暴露；提交前通过文件清单和页面检查验证全部八张。
 - 导航和卡片链接沿用 Next.js `Link`，不添加空 `href`。
-- Hero 动效在 `prefers-reduced-motion` 下禁用。
+- Hero 动效在 `prefers-reduced-motion` 下禁用并隐藏 GIF 动画层，静态 PNG 保持为最终画面。
 - 移动菜单打开时继续支持 Escape 关闭和页面滚动锁定。
 
 ## 验收标准
 
 1. 1392×928 截图中，页头、Hero、三张作品卡和三行博客列表的层级、比例和色彩与参考图明显一致；不再出现现有的大型抽象渐变框和中央文字玻璃卡。
-2. 页面实际加载一份仓库内循环 GIF 和七张本地 PNG，不依赖 Lovart URL；开启减少动态效果时 Hero 使用静态 PNG。
+2. 页面以本地 PNG 作为 Hero 稳定底层，并在其上加载一份羽化边缘的仓库内循环 GIF，不依赖 Lovart URL；开启减少动态效果时隐藏 GIF，仅呈现静态 PNG。
 3. `/`、`/about`、`/work`、`/blog` 及已有详情路由正常打开。
 4. 390px 宽度无横向滚动，导航、卡片和博客列表可读可点。
 5. `bun run lint` 与 `bun run build` 通过。
