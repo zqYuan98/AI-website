@@ -1,12 +1,12 @@
 ---
 title: 算法平台与工程化
-summary: 从做一个模型，到管理算法的生产、部署和复用。围绕天枢、灵析与 OCR 自研替换探索评测、版本、服务化与回退。
+summary: 从做一个模型，到管理算法的生产、部署和复用。围绕天枢、灵析与钢印 OCR 研发，探索评测、版本、服务化与回退。
 role: 平台工程
 period: 团队实践
 tags:
   - 平台
   - 工程化
-  - OCR
+  - 钢印 OCR 研发
 accent: teal
 cover: /images/home/work-productivity.png
 placeholder: false
@@ -20,7 +20,7 @@ featured: true
 
 ## 我做了什么
 
-参与并推动天枢算法平台、灵析应用平台、机具 OCR 等自研替换，以及评测、发布、部署和资产治理相关实践。
+参与并推动天枢算法平台、灵析应用平台与钢印 OCR 研发，以及评测、发布、部署和资产治理相关实践。
 
 ## 结果与反思
 

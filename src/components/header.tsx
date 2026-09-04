@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { contactHref, nav, site } from "@/lib/site";
+import { nav, site } from "@/lib/site";
 
 export function Header() {
   const pathname = usePathname();
@@ -16,20 +16,37 @@ function HeaderForPath({ pathname }: { pathname: string }) {
 
   useEffect(() => {
     if (!open) return;
+
+    const desktopQuery = window.matchMedia("(min-width: 1024px)");
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    const onBreakpointChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    const shouldLockPage = !desktopQuery.matches;
+    const closeFrame = desktopQuery.matches
+      ? window.requestAnimationFrame(() => setOpen(false))
+      : null;
+
+    if (shouldLockPage) {
+      document.addEventListener("keydown", onKey);
+      document.body.style.overflow = "hidden";
+    }
+    desktopQuery.addEventListener("change", onBreakpointChange);
+
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      desktopQuery.removeEventListener("change", onBreakpointChange);
+      if (closeFrame !== null) window.cancelAnimationFrame(closeFrame);
+      if (shouldLockPage) document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
   return (
     <header className="site-header sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur-md">
-      <div className="container-page grid h-[60px] grid-cols-[1fr_auto] items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
+      <div className="container-page grid h-[60px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_auto_1fr]">
         <Link
           href="/"
           className="justify-self-start text-[24px] font-bold tracking-[-0.045em] text-[#07175c]"
@@ -40,7 +57,7 @@ function HeaderForPath({ pathname }: { pathname: string }) {
 
         <nav
           aria-label="主导航"
-          className="hidden h-full items-center gap-9 md:flex"
+          className="hidden h-full items-center gap-7 lg:flex xl:gap-9"
         >
           {nav.map((item) => {
             const active =
@@ -61,15 +78,18 @@ function HeaderForPath({ pathname }: { pathname: string }) {
         </nav>
 
         <div className="flex items-center justify-self-end gap-2">
-          <Link
-            href={contactHref}
-            className="hidden h-8 items-center rounded-md border border-accent px-4 text-[13px] font-medium text-accent transition-colors duration-200 hover:bg-accent-soft md:inline-flex"
+          <a
+            href={site.shop.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden h-8 items-center rounded-md bg-[#07143d] px-4 text-[13px] font-medium text-white transition-colors duration-200 hover:bg-[#102765] lg:inline-flex"
           >
-            联系我
-          </Link>
+            {site.shop.name}
+            <span aria-hidden="true" className="ml-1">↗</span>
+          </a>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-white text-[#07175c] md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-white text-[#07175c] lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((value) => !value)}
@@ -83,7 +103,7 @@ function HeaderForPath({ pathname }: { pathname: string }) {
       {open ? (
         <div
           id="mobile-nav"
-          className="border-t border-line bg-white md:hidden"
+          className="border-t border-line bg-white lg:hidden"
         >
           <nav
             aria-label="移动端导航"
@@ -110,13 +130,16 @@ function HeaderForPath({ pathname }: { pathname: string }) {
                 </Link>
               );
             })}
-            <Link
-              href={contactHref}
+            <a
+              href={site.shop.url}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setOpen(false)}
-              className="mt-2 inline-flex h-11 items-center justify-center rounded-full bg-accent text-sm font-medium text-accent-contrast"
+              className="mt-2 inline-flex h-11 items-center justify-center rounded-full bg-[#07143d] text-sm font-medium text-white"
             >
-              联系我
-            </Link>
+              {site.shop.name} · notvitamin.xyz
+              <span aria-hidden="true" className="ml-1">↗</span>
+            </a>
           </nav>
         </div>
       ) : null}

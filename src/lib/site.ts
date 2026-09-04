@@ -3,7 +3,7 @@ export const site = {
   displayName: "维他命",
   githubUser: "zqYuan98",
   githubAlias: "YUANzq",
-  url: "https://notvitamin.com",
+  url: "https://www.notvitamin.com",
   eyebrow: "HELLO, I'M VITAMIN",
   headline: "你好，我是维他命。",
   claim: "从让模型看见，到让 AI 真正工作。",
@@ -13,6 +13,12 @@ export const site = {
   social: {
     github: "https://github.com/zqYuan98",
   },
+  shop: {
+    name: "NV 补给站",
+    url: "https://notvitamin.xyz/",
+    orderUrl: "https://notvitamin.xyz/user/index/query",
+    description: "AI 工具与数字服务；实时库存、价格与售后规则以商店页面为准。",
+  },
 } as const;
 
 export const nav = [
@@ -20,6 +26,8 @@ export const nav = [
   { href: "/about", label: "关于" },
   { href: "/work", label: "作品" },
   { href: "/blog", label: "博客" },
+  { href: "/tools", label: "工具" },
+  { href: "/lab", label: "Lab" },
 ] as const;
 
 export const contactHref = "/about#contact";

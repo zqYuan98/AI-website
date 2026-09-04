@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { SectionHeading } from "@/components/section-heading";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ const timeline = [
   },
   {
     period: "算法与平台工程化",
-    title: "天枢、灵析、OCR 替换、评测与部署",
+    title: "天枢、灵析、钢印 OCR 研发、评测与部署",
     body: "从做一个模型，到管理算法的生产、部署、回退和复用。",
   },
   {
@@ -42,18 +42,69 @@ const timeline = [
 ];
 
 export default function AboutPage() {
+  const profileJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    name: `关于${site.displayName}`,
+    url: `${site.url}/about`,
+    mainEntity: {
+      "@type": "Person",
+      name: site.displayName,
+      alternateName: site.name,
+      url: `${site.url}/about`,
+      description: site.tagline,
+      knowsAbout: [...site.keywords, "AI 产品", "计算机视觉", "人机协作"],
+      sameAs: [site.social.github],
+    },
+  };
+
   return (
     <div className="container-page py-16 sm:py-20">
-      <SectionHeading
-        level={1}
-        title={`你好，我是${site.displayName}`}
-        description={site.tagline}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(profileJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
+      <section className="about-portrait-hero relative overflow-hidden rounded-[28px] border border-[#dce7f7] bg-[linear-gradient(118deg,#ffffff_0%,#f8fbff_48%,#eaf2ff_100%)]">
+        <div className="grid min-h-[430px] items-center lg:grid-cols-12">
+          <div className="relative z-10 px-7 py-12 sm:px-12 lg:col-span-7 lg:py-16">
+            <p className="text-xs font-semibold tracking-[0.18em] text-accent uppercase">
+              About Vitamin
+            </p>
+            <h1 className="mt-4 max-w-2xl text-[38px] font-bold leading-[1.12] tracking-[-0.04em] text-[#07175c] sm:text-[52px]">
+              从视觉算法走向
+              <br />
+              AI 产品
+            </h1>
+            <p className="mt-5 max-w-xl text-base font-medium leading-8 text-[#4f6387] sm:text-lg">
+              {site.tagline}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-2.5 text-xs font-medium text-[#314a7a]">
+              <span className="rounded-full border border-[#cbdaf0] bg-white/80 px-3 py-1.5">算法 → 产品</span>
+              <span className="rounded-full border border-[#cbdaf0] bg-white/80 px-3 py-1.5">问题 → 验收</span>
+              <span className="rounded-full border border-[#cbdaf0] bg-white/80 px-3 py-1.5">AI → 真实工作</span>
+            </div>
+          </div>
+          <div className="relative min-h-[360px] self-stretch lg:col-span-5 lg:min-h-[430px]">
+            <div className="absolute inset-x-[8%] bottom-5 h-16 rounded-[50%] bg-[#5c6ce0]/20 blur-2xl" aria-hidden="true" />
+            <div className="absolute right-[8%] top-[12%] h-44 w-44 rounded-full border border-[#70a1ff]/25" aria-hidden="true" />
+            <Image
+              src="/images/about/vitamin-avatar-v5.png"
+              alt="维他命的卡通形象"
+              fill
+              priority
+              sizes="(max-width: 1023px) 100vw, 38vw"
+              className="relative z-10 object-contain object-bottom px-5 pt-4"
+            />
+          </div>
+        </div>
+      </section>
 
-      <section className="mt-12 grid gap-10 lg:grid-cols-12">
-        <div className="space-y-5 text-base leading-8 text-foreground-muted lg:col-span-7">
+      <section className="mt-14 grid gap-10 lg:grid-cols-12">
+        <div className="space-y-5 text-base leading-8 text-foreground-muted lg:col-span-8">
           <p>
-            职业起点是算法工程师，做过人脸识别、活体检测和工业视觉缺陷检测。后来，工作逐渐延伸到算法平台、应用平台、OCR 自研替换，以及软件、硬件和项目交付。
+            职业起点是算法工程师，做过人脸识别、活体检测和工业视觉缺陷检测。后来，工作逐渐延伸到算法平台、应用平台、钢印 OCR 研发，以及软件、硬件和项目交付。
           </p>
           <p>
             这些经历让我越来越确定：AI 产品最难的部分往往不在模型本身。问题是否真实、数据能否稳定获取、错误如何被发现和接管、结果由谁确认、产品怎样验收，以及一次交付能否沉淀为下一次可复用的能力，才真正决定它能不能落地。
@@ -62,7 +113,7 @@ export default function AboutPage() {
             因此，我把长期方向定义为「AI 时代的产品经理」：保留对技术和能力边界的判断，同时连接业务、用户、工程与组织，让 AI 不只停留在演示中，而是真正进入工作、被使用、被验证并持续产生价值。
           </p>
         </div>
-        <aside className="card-surface h-fit p-6 lg:col-span-5">
+        <aside className="card-surface h-fit p-6 lg:col-span-4">
           <p className="text-xs font-medium tracking-[0.16em] text-foreground-subtle uppercase">
             快速名片
           </p>
@@ -126,7 +177,7 @@ export default function AboutPage() {
           <a
             href={site.social.github}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="inline-flex h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-accent-contrast hover:bg-accent-hover"
           >
             GitHub · {site.githubUser}

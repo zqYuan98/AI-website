@@ -33,14 +33,34 @@ export function Footer() {
         </div>
         <div className="md:col-span-3" id="site-contact">
           <p className="text-xs font-medium tracking-[0.16em] text-foreground-subtle uppercase">
-            联系
+            连接
           </p>
           <ul className="mt-4 space-y-2.5 text-sm">
             <li>
               <a
+                href={site.shop.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground-muted transition-colors hover:text-accent"
+              >
+                {site.shop.name} <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href={site.shop.orderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground-muted transition-colors hover:text-accent"
+              >
+                订单查询 <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+            <li>
+              <a
                 href={site.social.github}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-foreground-muted transition-colors hover:text-accent"
               >
                 GitHub · {site.githubUser}
