@@ -119,20 +119,20 @@ export default function AboutPage() {
           </p>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-foreground-subtle">主张</dt>
-              <dd className="text-right font-medium">{site.claim}</dd>
+              <dt className="shrink-0 whitespace-nowrap text-foreground-subtle">主张</dt>
+              <dd className="min-w-0 text-right font-medium [overflow-wrap:anywhere]">{site.claim}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-foreground-subtle">关键词</dt>
-              <dd className="text-right font-medium">{site.keywords.join(" · ")}</dd>
+              <dt className="shrink-0 whitespace-nowrap text-foreground-subtle">关键词</dt>
+              <dd className="min-w-0 text-right font-medium [overflow-wrap:anywhere]">{site.keywords.join(" · ")}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-foreground-subtle">站点</dt>
-              <dd className="text-right font-medium">notvitamin.com</dd>
+              <dt className="shrink-0 whitespace-nowrap text-foreground-subtle">站点</dt>
+              <dd className="min-w-0 text-right font-medium [overflow-wrap:anywhere]">notvitamin.com</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-foreground-subtle">GitHub</dt>
-              <dd className="text-right font-medium">{site.githubUser}</dd>
+              <dt className="shrink-0 whitespace-nowrap text-foreground-subtle">GitHub</dt>
+              <dd className="min-w-0 text-right font-medium [overflow-wrap:anywhere]">{site.githubUser}</dd>
             </div>
           </dl>
         </aside>

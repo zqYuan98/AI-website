@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { nav, site } from "@/lib/site";
 
 export function Header() {
@@ -13,13 +13,17 @@ export function Header() {
 
 function HeaderForPath({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
 
     const desktopQuery = window.matchMedia("(min-width: 1024px)");
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        menuButtonRef.current?.focus({ preventScroll: true });
+      }
     };
     const onBreakpointChange = (event: MediaQueryListEvent) => {
       if (event.matches) setOpen(false);
@@ -88,6 +92,7 @@ function HeaderForPath({ pathname }: { pathname: string }) {
             <span aria-hidden="true" className="ml-1">↗</span>
           </a>
           <button
+            ref={menuButtonRef}
             type="button"
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-white text-[#07175c] lg:hidden"
             aria-expanded={open}
@@ -103,11 +108,11 @@ function HeaderForPath({ pathname }: { pathname: string }) {
       {open ? (
         <div
           id="mobile-nav"
-          className="border-t border-line bg-white lg:hidden"
+          className="max-h-[calc(100dvh-61px)] overflow-y-auto overscroll-contain border-t border-line bg-white lg:hidden"
         >
           <nav
             aria-label="移动端导航"
-            className="container-page flex flex-col gap-1 py-4"
+            className="container-page flex flex-col gap-1 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
             {nav.map((item) => {
               const active =

@@ -1071,6 +1071,11 @@
   font-size: 0.66rem;
 }
 
+.mobileOnly,
+.mobileLoadMore {
+  display: none;
+}
+
 .tabs button:focus-visible,
 .searchBox button:focus-visible,
 .filterRail button:focus-visible,
@@ -1343,20 +1348,47 @@
 @media (max-width: 47.999rem) {
   .heroInner {
     min-height: 0;
-    padding-block: 3.5rem;
+    gap: 1.5rem;
+    padding-block: 2rem;
   }
 
   .heroCopy h1 {
-    font-size: clamp(2.7rem, 14vw, 4rem);
+    margin-top: 1rem;
+    font-size: clamp(2.35rem, 11vw, 3.3rem);
+  }
+
+  .heroLead {
+    margin-top: 1.05rem;
+    font-size: 0.96rem;
+    line-height: 1.7;
+  }
+
+  .heroMeta {
+    gap: 0.5rem;
+    margin-top: 1.25rem;
   }
 
   .heroArt {
-    min-height: 19rem;
+    min-height: clamp(13rem, 56vw, 14.5rem);
     border-radius: 0.8rem 0.8rem 3rem 0.8rem;
   }
 
   .curationSection {
-    padding-block: 4rem 2rem;
+    padding-block: 3rem 2rem;
+  }
+
+  .desktopOnly,
+  .desktopLoadMore,
+  .mobileDeferredTool {
+    display: none;
+  }
+
+  .mobileOnly {
+    display: inline;
+  }
+
+  .mobileLoadMore {
+    display: flex;
   }
 
   .filterRow {

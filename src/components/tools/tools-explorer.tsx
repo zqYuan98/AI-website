@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent,
+} from "react";
 import type {
   RecommendationEntry,
   RecommendationType,
@@ -25,7 +31,9 @@ type ToolsExplorerProps = {
 
 type LinkStatus = PublicToolEntry["linkStatus"];
 
-const PAGE_SIZE = 36;
+const DESKTOP_PAGE_SIZE = 36;
+const MOBILE_PAGE_SIZE = 18;
+const MOBILE_LAYOUT_QUERY = "(max-width: 47.999rem)";
 
 const views: { id: View; label: string }[] = [
   { id: "tools", label: "工具" },
@@ -38,6 +46,20 @@ const linkStatusLabels: Record<LinkStatus, string> = {
   unreachable: "本次未连通",
   unchecked: "尚未复核",
 };
+
+function subscribeToMobileLayout(onChange: () => void) {
+  const mediaQuery = window.matchMedia(MOBILE_LAYOUT_QUERY);
+  mediaQuery.addEventListener("change", onChange);
+  return () => mediaQuery.removeEventListener("change", onChange);
+}
+
+function getMobileLayoutSnapshot() {
+  return window.matchMedia(MOBILE_LAYOUT_QUERY).matches;
+}
+
+function getServerMobileLayoutSnapshot() {
+  return false;
+}
 
 function normalize(value: string) {
   return value.trim().toLocaleLowerCase("zh-CN");
@@ -67,7 +89,13 @@ function ExternalArrow() {
   return <span aria-hidden="true">↗</span>;
 }
 
-function ToolCard({ tool }: { tool: PublicToolEntry }) {
+function ToolCard({
+  tool,
+  deferOnMobile = false,
+}: {
+  tool: PublicToolEntry;
+  deferOnMobile?: boolean;
+}) {
   const hasEditorialNote = Boolean(
     tool.scenario ||
       tool.audience ||
@@ -77,7 +105,9 @@ function ToolCard({ tool }: { tool: PublicToolEntry }) {
   );
 
   return (
-    <article className={styles.toolCard}>
+    <article
+      className={`${styles.toolCard}${deferOnMobile ? ` ${styles.mobileDeferredTool}` : ""}`}
+    >
       <header className={styles.toolIdentity}>
         <ToolIcon name={tool.name} src={tool.icon || undefined} />
         <div className={styles.toolTitleGroup}>
@@ -221,12 +251,17 @@ function EmptyState({ onReset }: { onReset: () => void }) {
 }
 
 export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
+  const isMobileLayout = useSyncExternalStore(
+    subscribeToMobileLayout,
+    getMobileLayoutSnapshot,
+    getServerMobileLayoutSnapshot,
+  );
   const [activeView, setActiveView] = useState<View>("tools");
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ToolCategory | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [featuredOnly, setFeaturedOnly] = useState(false);
-  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
+  const [expandedCount, setExpandedCount] = useState(0);
   const [expandedCategories, setExpandedCategories] = useState<Set<ToolCategory>>(
     () => new Set([TOOL_CATEGORIES[0]]),
   );
@@ -282,7 +317,18 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
       ),
     [featuredOnly, normalizedQuery, selectedCategory, selectedSubcategory, tools],
   );
-  const visibleTools = filteredTools.slice(0, visibleLimit);
+  const desktopVisibleCount = Math.min(
+    filteredTools.length,
+    Math.max(DESKTOP_PAGE_SIZE, expandedCount),
+  );
+  const mobileVisibleCount = Math.min(
+    filteredTools.length,
+    Math.max(MOBILE_PAGE_SIZE, expandedCount),
+  );
+  const visibleTools = filteredTools.slice(
+    0,
+    isMobileLayout ? mobileVisibleCount : desktopVisibleCount,
+  );
 
   const visibleRecommendations = useMemo(
     () =>
@@ -327,7 +373,7 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
   }
 
   function resetVisibleTools() {
-    setVisibleLimit(PAGE_SIZE);
+    setExpandedCount(0);
   }
 
   function selectTaxonomy(category: ToolCategory | null, subcategory = "") {
@@ -451,7 +497,12 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
 
       <p className={styles.srOnly} aria-live="polite" aria-atomic="true">
         当前匹配 {activeCount} 条，共 {activeTotal} 条。
-        {activeView === "tools" ? `已显示 ${visibleTools.length} 条。` : ""}
+        {activeView === "tools" ? (
+          <>
+            <span className={styles.desktopOnly}>已显示 {desktopVisibleCount} 条。</span>
+            <span className={styles.mobileOnly}>已显示 {mobileVisibleCount} 条。</span>
+          </>
+        ) : null}
       </p>
 
       <section
@@ -620,27 +671,63 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
                 </button>
               </div>
               <p className={styles.resultCount}>
-                匹配 {filteredTools.length} · 已显示 {visibleTools.length}
+                <span className={styles.desktopOnly}>
+                  匹配 {filteredTools.length} · 已显示 {desktopVisibleCount}
+                </span>
+                <span className={styles.mobileOnly}>
+                  匹配 {filteredTools.length} · 已显示 {mobileVisibleCount}
+                </span>
               </p>
             </div>
 
             {filteredTools.length > 0 ? (
               <>
                 <div className={styles.toolGrid}>
-                  {visibleTools.map((tool) => (
-                    <ToolCard key={tool.slug} tool={tool} />
+                  {visibleTools.map((tool, index) => (
+                    <ToolCard
+                      key={tool.slug}
+                      tool={tool}
+                      deferOnMobile={index >= mobileVisibleCount}
+                    />
                   ))}
                 </div>
-                {visibleTools.length < filteredTools.length ? (
-                  <div className={styles.loadMoreWrap}>
+                {desktopVisibleCount < filteredTools.length ? (
+                  <div className={`${styles.loadMoreWrap} ${styles.desktopLoadMore}`}>
                     <button
                       type="button"
-                      onClick={() => setVisibleLimit((current) => current + PAGE_SIZE)}
+                      onClick={() =>
+                        setExpandedCount(desktopVisibleCount + DESKTOP_PAGE_SIZE)
+                      }
                     >
-                      再显示 {Math.min(PAGE_SIZE, filteredTools.length - visibleTools.length)} 个
+                      再显示{" "}
+                      {Math.min(
+                        DESKTOP_PAGE_SIZE,
+                        filteredTools.length - desktopVisibleCount,
+                      )}{" "}
+                      个
                     </button>
                     <span>
-                      {visibleTools.length} / {filteredTools.length}
+                      {desktopVisibleCount} / {filteredTools.length}
+                    </span>
+                  </div>
+                ) : null}
+                {mobileVisibleCount < filteredTools.length ? (
+                  <div className={`${styles.loadMoreWrap} ${styles.mobileLoadMore}`}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedCount(mobileVisibleCount + MOBILE_PAGE_SIZE)
+                      }
+                    >
+                      再显示{" "}
+                      {Math.min(
+                        MOBILE_PAGE_SIZE,
+                        filteredTools.length - mobileVisibleCount,
+                      )}{" "}
+                      个
+                    </button>
+                    <span>
+                      {mobileVisibleCount} / {filteredTools.length}
                     </span>
                   </div>
                 ) : null}

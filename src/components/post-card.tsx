@@ -26,7 +26,7 @@ export function PostCard({ post }: { post: PostMeta }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h3 className="truncate text-sm font-semibold tracking-tight text-[#07175c] transition-colors group-hover:text-accent sm:text-[15px]">
+          <h3 className="min-w-0 max-w-full line-clamp-2 text-sm font-semibold tracking-tight whitespace-normal text-[#07175c] transition-colors group-hover:text-accent sm:line-clamp-none sm:truncate sm:text-[15px]">
             {post.title}
           </h3>
           {post.placeholder ? <PlaceholderBadge /> : null}
