@@ -1,6 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
-import matter from "gray-matter";
+import {
+  assertUniqueSlugs,
+  contentError,
+  parseFrontmatter,
+  requireContentBoolean,
+  requireContentCover,
+  requireContentDate,
+  requireContentOrder,
+  requireContentSlug,
+  requireContentString,
+} from "./content-validation";
 
 const LAB_ROOT = path.join(process.cwd(), "content", "lab");
 const LAB_STATUSES = ["可用", "实验中"] as const;
@@ -39,102 +49,26 @@ export type AcceptanceChecklistGroup = {
   items: readonly AcceptanceChecklistItem[];
 };
 
-function fail(file: string, field: string, reason: string): never {
-  throw new Error(`[content/lab/${file}] 字段“${field}”${reason}`);
-}
-
-function requiredString(
-  data: Record<string, unknown>,
-  field: string,
-  file: string,
-): string {
-  const value = data[field];
-  if (typeof value !== "string" || value.trim() === "") {
-    fail(file, field, "必须是非空字符串");
+export function parseLabContent(file: string, raw: string): LabPost {
+  const source = `content/lab/${file}`;
+  const { data, body } = parseFrontmatter(source, raw);
+  const status = requireContentString(source, "status", data.status);
+  if (!LAB_STATUSES.includes(status as LabStatus)) {
+    contentError(source, "status", `必须是 ${LAB_STATUSES.join(" / ")} 之一`);
   }
-  return value.trim();
-}
-
-function requiredBoolean(
-  data: Record<string, unknown>,
-  field: string,
-  file: string,
-): boolean {
-  const value = data[field];
-  if (typeof value !== "boolean") {
-    fail(file, field, "必须是布尔值");
-  }
-  return value;
-}
-
-function requiredNumber(
-  data: Record<string, unknown>,
-  field: string,
-  file: string,
-): number {
-  const value = data[field];
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    fail(file, field, "必须是有限数字");
-  }
-  return value;
-}
-
-function requiredStatus(
-  data: Record<string, unknown>,
-  file: string,
-): LabStatus {
-  const value = requiredString(data, "status", file);
-  if (!LAB_STATUSES.includes(value as LabStatus)) {
-    fail(file, "status", `必须是 ${LAB_STATUSES.join(" / ")} 之一`);
-  }
-  return value as LabStatus;
-}
-
-function requiredDate(
-  data: Record<string, unknown>,
-  field: string,
-  file: string,
-): string {
-  const raw = data[field];
-  const value =
-    raw instanceof Date && !Number.isNaN(raw.getTime())
-      ? raw.toISOString().slice(0, 10)
-      : typeof raw === "string"
-        ? raw.trim()
-        : "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    fail(file, field, "必须使用 YYYY-MM-DD 格式");
-  }
-  return value;
-}
-
-function parseLab(file: string): LabPost {
-  const raw = fs.readFileSync(path.join(LAB_ROOT, file), "utf8");
-  const { data: frontmatter, content } = matter(raw);
-  const data = frontmatter as Record<string, unknown>;
-  const cover = requiredString(data, "cover", file);
-  const body = content.trim();
-
-  if (!cover.startsWith("/")) {
-    fail(file, "cover", "必须是 public 目录下的站内绝对路径");
-  }
-  if (!body) {
-    fail(file, "正文", "不能为空");
-  }
-
   return {
-    slug: file.replace(/\.mdx?$/, ""),
-    title: requiredString(data, "title", file),
-    summary: requiredString(data, "summary", file),
-    status: requiredStatus(data, file),
-    problem: requiredString(data, "problem", file),
-    usage: requiredString(data, "usage", file),
-    limitation: requiredString(data, "limitation", file),
-    featured: requiredBoolean(data, "featured", file),
-    order: requiredNumber(data, "order", file),
-    updatedAt: requiredDate(data, "updatedAt", file),
-    cover,
-    coverAlt: requiredString(data, "coverAlt", file),
+    slug: requireContentSlug(source, file.replace(/\.mdx?$/, "")),
+    title: requireContentString(source, "title", data.title),
+    summary: requireContentString(source, "summary", data.summary),
+    status: status as LabStatus,
+    problem: requireContentString(source, "problem", data.problem),
+    usage: requireContentString(source, "usage", data.usage),
+    limitation: requireContentString(source, "limitation", data.limitation),
+    featured: requireContentBoolean(source, "featured", data.featured),
+    order: requireContentOrder(source, data.order),
+    updatedAt: requireContentDate(source, "updatedAt", data.updatedAt),
+    cover: requireContentCover(source, data.cover),
+    coverAlt: requireContentString(source, "coverAlt", data.coverAlt),
     body,
   };
 }
@@ -142,11 +76,13 @@ function parseLab(file: string): LabPost {
 export function getAllLabs(): LabPost[] {
   if (!fs.existsSync(LAB_ROOT)) return [];
 
-  return fs
+  const labs = fs
     .readdirSync(LAB_ROOT)
     .filter((file) => file.endsWith(".md") || file.endsWith(".mdx"))
-    .map(parseLab)
+    .map((file) => parseLabContent(file, fs.readFileSync(path.join(LAB_ROOT, file), "utf8")))
     .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+  assertUniqueSlugs("content/lab", labs);
+  return labs;
 }
 
 export function getLabBySlug(slug: string): LabPost | undefined {

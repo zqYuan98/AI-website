@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
+  Suspense,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -10,7 +13,6 @@ import {
 } from "react";
 import type {
   RecommendationEntry,
-  RecommendationType,
   PublicToolEntry,
 } from "@/lib/curation";
 import {
@@ -18,11 +20,23 @@ import {
   TOOL_SUBCATEGORIES,
   type ToolCategory,
 } from "@/lib/tool-taxonomy";
+import {
+  DESKTOP_PAGE_SIZE,
+  MOBILE_PAGE_SIZE,
+  filterIndexedRecommendations,
+  filterIndexedTools,
+  getVisibleToolCounts,
+  indexRecommendations,
+  indexTools,
+  parseToolExplorerState,
+  serializeToolExplorerState,
+  type ExplorerView,
+  type IndexedTool,
+  type RecommendationFilter,
+  type ToolExplorerState,
+} from "@/lib/tool-explorer-state";
 import { ToolIcon } from "./tool-icon";
 import styles from "./tools.module.css";
-
-type View = "tools" | "recommendations";
-type RecommendationFilter = "全部" | RecommendationType;
 
 type ToolsExplorerProps = {
   tools: PublicToolEntry[];
@@ -31,11 +45,10 @@ type ToolsExplorerProps = {
 
 type LinkStatus = PublicToolEntry["linkStatus"];
 
-const DESKTOP_PAGE_SIZE = 36;
-const MOBILE_PAGE_SIZE = 18;
 const MOBILE_LAYOUT_QUERY = "(max-width: 47.999rem)";
+const LOCATION_CHANGE_EVENT = "tool-explorer-change";
 
-const views: { id: View; label: string }[] = [
+const views: { id: ExplorerView; label: string }[] = [
   { id: "tools", label: "工具" },
   { id: "recommendations", label: "阅读与资源" },
 ];
@@ -61,28 +74,31 @@ function getServerMobileLayoutSnapshot() {
   return false;
 }
 
-function normalize(value: string) {
-  return value.trim().toLocaleLowerCase("zh-CN");
+function subscribeToLocation(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  window.addEventListener(LOCATION_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("popstate", onChange);
+    window.removeEventListener(LOCATION_CHANGE_EVENT, onChange);
+  };
 }
 
-function matches(
-  searchable: Array<string | string[] | undefined>,
-  query: string,
-) {
-  if (!query) return true;
-  return searchable.some((value) =>
-    (Array.isArray(value) ? value.join(" ") : (value ?? ""))
-      .toLocaleLowerCase("zh-CN")
-      .includes(query),
-  );
+function getLocationSnapshot() {
+  return window.location.search;
 }
 
-function getHostname(url: string) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
+function getServerLocationSnapshot() {
+  // Prerender real default cards; read a direct URL after hydration without a CSR bailout.
+  return "";
+}
+
+function RouterLocationObserver() {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    // Next Link can reuse this page without emitting popstate (for example /tools?q=x → /tools).
+    window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
+  }, [searchParams]);
+  return null;
 }
 
 function ExternalArrow() {
@@ -91,9 +107,11 @@ function ExternalArrow() {
 
 function ToolCard({
   tool,
+  hostname,
   deferOnMobile = false,
 }: {
   tool: PublicToolEntry;
+  hostname: IndexedTool["hostname"];
   deferOnMobile?: boolean;
 }) {
   const hasEditorialNote = Boolean(
@@ -112,7 +130,7 @@ function ToolCard({
         <ToolIcon name={tool.name} src={tool.icon || undefined} />
         <div className={styles.toolTitleGroup}>
           <h3>{tool.name}</h3>
-          <p>{getHostname(tool.url)}</p>
+          <p>{hostname}</p>
         </div>
         {tool.usedByVitamin ? (
           <span className={styles.workflowBadge}>本站工作流在用</span>
@@ -256,23 +274,41 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
     getMobileLayoutSnapshot,
     getServerMobileLayoutSnapshot,
   );
-  const [activeView, setActiveView] = useState<View>("tools");
-  const [query, setQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<ToolCategory | null>(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [featuredOnly, setFeaturedOnly] = useState(false);
-  const [expandedCount, setExpandedCount] = useState(0);
-  const [expandedCategories, setExpandedCategories] = useState<Set<ToolCategory>>(
-    () => new Set([TOOL_CATEGORIES[0]]),
+  const search = useSyncExternalStore(
+    subscribeToLocation,
+    getLocationSnapshot,
+    getServerLocationSnapshot,
   );
-  const [recommendationFilter, setRecommendationFilter] =
-    useState<RecommendationFilter>("全部");
+  const [loadedTools, setLoadedTools] = useState({ filterKey: "", count: 0 });
+  const [expandedCategories, setExpandedCategories] = useState<Map<ToolCategory, boolean>>(
+    () => new Map(),
+  );
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const searchEditHref = useRef<string | null>(null);
 
   const recommendationTypes = useMemo(
     () => Array.from(new Set(recommendations.map((item) => item.type))),
     [recommendations],
   );
+  const state = useMemo(
+    () => parseToolExplorerState(search, recommendationTypes),
+    [search, recommendationTypes],
+  );
+  const {
+    view: activeView,
+    query,
+    category: selectedCategory,
+    subcategory: selectedSubcategory,
+    featuredOnly,
+    recommendationType: recommendationFilter,
+  } = state;
+  const indexedTools = useMemo(() => indexTools(tools), [tools]);
+  const indexedRecommendations = useMemo(
+    () => indexRecommendations(recommendations),
+    [recommendations],
+  );
+  const filterKey = JSON.stringify([query, selectedCategory, selectedSubcategory, featuredOnly]);
+  const expandedCount = loadedTools.filterKey === filterKey ? loadedTools.count : 0;
   const featuredCount = useMemo(
     () => tools.filter((tool) => tool.featured).length,
     [tools],
@@ -291,73 +327,49 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
 
     return { categories, subcategories };
   }, [tools]);
-  const normalizedQuery = normalize(query);
-
   const filteredTools = useMemo(
-    () =>
-      tools.filter(
-        (tool) =>
-          (!selectedCategory || tool.category === selectedCategory) &&
-          (!selectedSubcategory || tool.subcategory === selectedSubcategory) &&
-          (!featuredOnly || tool.featured) &&
-          matches(
-            [
-              tool.name,
-              getHostname(tool.url),
-              tool.category,
-              tool.subcategory,
-              tool.scenario,
-              tool.audience,
-              tool.usage,
-              tool.avoidWhen,
-              tool.alternatives,
-            ],
-            normalizedQuery,
-          ),
-      ),
-    [featuredOnly, normalizedQuery, selectedCategory, selectedSubcategory, tools],
+    () => filterIndexedTools(indexedTools, state),
+    [indexedTools, state],
   );
-  const desktopVisibleCount = Math.min(
-    filteredTools.length,
-    Math.max(DESKTOP_PAGE_SIZE, expandedCount),
-  );
-  const mobileVisibleCount = Math.min(
-    filteredTools.length,
-    Math.max(MOBILE_PAGE_SIZE, expandedCount),
-  );
+  const { desktop: desktopVisibleCount, mobile: mobileVisibleCount } =
+    getVisibleToolCounts(filteredTools.length, expandedCount);
   const visibleTools = filteredTools.slice(
     0,
     isMobileLayout ? mobileVisibleCount : desktopVisibleCount,
   );
 
   const visibleRecommendations = useMemo(
-    () =>
-      recommendations.filter(
-        (item) =>
-          (recommendationFilter === "全部" || item.type === recommendationFilter) &&
-          matches(
-            [
-              item.title,
-              item.type,
-              getHostname(item.url),
-              item.verdict,
-              item.boundary,
-              item.learned,
-            ],
-            normalizedQuery,
-          ),
-      ),
-    [normalizedQuery, recommendationFilter, recommendations],
+    () => filterIndexedRecommendations(indexedRecommendations, state),
+    [indexedRecommendations, state],
   );
 
   const activeCount =
     activeView === "tools" ? filteredTools.length : visibleRecommendations.length;
   const activeTotal = activeView === "tools" ? tools.length : recommendations.length;
 
+  function updateFilters(patch: Partial<ToolExplorerState>, editingSearch = false) {
+    // Read the live URL so rapid input and a back/forward action cannot overwrite each other.
+    const currentHref = window.location.href;
+    const currentState = parseToolExplorerState(window.location.search, recommendationTypes);
+    const nextHref = serializeToolExplorerState({ ...currentState, ...patch }, currentHref);
+    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const replace = editingSearch && searchEditHref.current === currentHref;
+    searchEditHref.current = null;
+    if (nextHref === currentPath) return;
+    if (replace) window.history.replaceState(null, "", nextHref);
+    else window.history.pushState(null, "", nextHref);
+    if (editingSearch) searchEditHref.current = window.location.href;
+    window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
+  }
+
+  function setExpandedCount(count: number) {
+    setLoadedTools({ filterKey, count });
+  }
+
   function activateView(index: number, moveFocus = false) {
     const view = views[index];
     if (!view) return;
-    setActiveView(view.id);
+    updateFilters({ view: view.id });
     if (moveFocus) tabRefs.current[index]?.focus();
   }
 
@@ -372,18 +384,12 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
     activateView(nextIndex, true);
   }
 
-  function resetVisibleTools() {
-    setExpandedCount(0);
-  }
-
   function selectTaxonomy(category: ToolCategory | null, subcategory = "") {
-    setSelectedCategory(category);
-    setSelectedSubcategory(subcategory);
-    resetVisibleTools();
+    updateFilters({ category, subcategory });
     if (category) {
       setExpandedCategories((current) => {
-        const next = new Set(current);
-        next.add(category);
+        const next = new Map(current);
+        next.set(category, true);
         return next;
       });
     }
@@ -391,9 +397,10 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
 
   function toggleCategory(category: ToolCategory) {
     setExpandedCategories((current) => {
-      const next = new Set(current);
-      if (next.has(category)) next.delete(category);
-      else next.add(category);
+      const next = new Map(current);
+      const isExpanded = current.get(category) ??
+        (selectedCategory === category || category === TOOL_CATEGORIES[0]);
+      next.set(category, !isExpanded);
       return next;
     });
   }
@@ -426,19 +433,19 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
   }
 
   function resetActiveFilters() {
-    setQuery("");
     if (activeView === "tools") {
-      setSelectedCategory(null);
-      setSelectedSubcategory("");
-      setFeaturedOnly(false);
-      resetVisibleTools();
+      updateFilters({ query: "", category: null, subcategory: "", featuredOnly: false });
     } else {
-      setRecommendationFilter("全部");
+      updateFilters({ query: "", recommendationType: "全部" });
     }
   }
 
   return (
     <div className={styles.explorer}>
+      {/* Only the invisible router observer suspends; real cards remain in the static HTML. */}
+      <Suspense fallback={null}>
+        <RouterLocationObserver />
+      </Suspense>
       <div className={styles.explorerHeader}>
         <div className={styles.tabs} role="tablist" aria-label="工具箱内容">
           {views.map((view, index) => (
@@ -474,19 +481,14 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
             id="curation-search"
             type="search"
             value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              resetVisibleTools();
-            }}
+            onChange={(event) => updateFilters({ query: event.target.value }, true)}
+            onBlur={() => { searchEditHref.current = null; }}
             placeholder="搜索名称、域名、用途…"
           />
           {query ? (
             <button
               type="button"
-              onClick={() => {
-                setQuery("");
-                resetVisibleTools();
-              }}
+              onClick={() => updateFilters({ query: "" })}
               aria-label="清除搜索词"
             >
               ×
@@ -572,7 +574,8 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
 
             <div className={styles.categoryGroups}>
               {TOOL_CATEGORIES.map((category, categoryIndex) => {
-                const isExpanded = expandedCategories.has(category);
+                const isExpanded = expandedCategories.get(category) ??
+                  (selectedCategory === category || category === TOOL_CATEGORIES[0]);
                 const populatedSubcategories = TOOL_SUBCATEGORIES[category].filter(
                   (subcategory) =>
                     (taxonomyCounts.subcategories.get(
@@ -652,20 +655,14 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
                 <button
                   type="button"
                   aria-pressed={!featuredOnly}
-                  onClick={() => {
-                    setFeaturedOnly(false);
-                    resetVisibleTools();
-                  }}
+                  onClick={() => updateFilters({ featuredOnly: false })}
                 >
                   全部收藏 <span>{tools.length}</span>
                 </button>
                 <button
                   type="button"
                   aria-pressed={featuredOnly}
-                  onClick={() => {
-                    setFeaturedOnly(true);
-                    resetVisibleTools();
-                  }}
+                  onClick={() => updateFilters({ featuredOnly: true })}
                 >
                   维他命精选 <span>{featuredCount}</span>
                 </button>
@@ -683,10 +680,11 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
             {filteredTools.length > 0 ? (
               <>
                 <div className={styles.toolGrid}>
-                  {visibleTools.map((tool, index) => (
+                  {visibleTools.map(({ tool, hostname }, index) => (
                     <ToolCard
                       key={tool.slug}
                       tool={tool}
+                      hostname={hostname}
                       deferOnMobile={index >= mobileVisibleCount}
                     />
                   ))}
@@ -755,7 +753,7 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
                 key={type}
                 type="button"
                 aria-pressed={recommendationFilter === type}
-                onClick={() => setRecommendationFilter(type)}
+                onClick={() => updateFilters({ recommendationType: type })}
               >
                 {type}
               </button>
@@ -768,7 +766,7 @@ export function ToolsExplorer({ tools, recommendations }: ToolsExplorerProps) {
 
         {visibleRecommendations.length > 0 ? (
           <div className={styles.resourceList}>
-            {visibleRecommendations.map((item) => (
+            {visibleRecommendations.map(({ item }) => (
               <RecommendationCard key={item.slug} item={item} />
             ))}
           </div>

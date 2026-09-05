@@ -1,8 +1,7 @@
 ---
 title: 企业 AI 别一上来就造 Agent
 summary: 先确认问题与验收，再选择 Workflow、Skill 还是 Agent。工具形态不该先于工作目标。
-date: 2026-07-18
-readingTime: 6 分钟阅读
+date: "2026-07-18"
 tags:
   - Agent
   - 方法论

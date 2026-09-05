@@ -58,7 +58,7 @@ export type RecommendationEntry = {
   order: number;
 };
 
-export type PublicToolEntry = Omit<ToolEntry, "collectionSource" | "sourceCategories">;
+export type PublicToolEntry = Omit<ToolEntry, "collectionSource" | "sourceCategories" | "updatedAt" | "order">;
 
 /** Keep import bookkeeping on the server, outside the public page payload. */
 export function toPublicTool(tool: ToolEntry): PublicToolEntry {
@@ -77,8 +77,6 @@ export function toPublicTool(tool: ToolEntry): PublicToolEntry {
     url: tool.url,
     usedByVitamin: tool.usedByVitamin,
     featured: tool.featured,
-    updatedAt: tool.updatedAt,
-    order: tool.order,
   };
 }
 

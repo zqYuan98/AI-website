@@ -4,9 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
+    "build": "node scripts/check-quality.mjs --build",
     "start": "next start",
-    "lint": "eslint"
+    "check": "node scripts/check-quality.mjs",
+    "check:content": "node scripts/check-content.mjs",
+    "check:tools": "node scripts/check-tools.mjs",
+    "check:tools-state": "node scripts/check-tools-state.mjs",
+    "check:smoke": "node scripts/check-smoke.mjs",
+    "typecheck": "node scripts/check-quality.mjs --typecheck",
+    "lint": "eslint . --max-warnings=0"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

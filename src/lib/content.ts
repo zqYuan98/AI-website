@@ -1,6 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
-import matter from "gray-matter";
+import {
+  assertUniqueSlugs,
+  contentError,
+  contentTags,
+  isContentSlug,
+  optionalContentCover,
+  parseFrontmatter,
+  requireContentBoolean,
+  requireContentDate,
+  requireContentOrder,
+  requireContentSlug,
+  requireContentString,
+} from "./content-validation";
+import { estimateReadingTime } from "./reading-time";
 
 const CONTENT_ROOT = path.join(process.cwd(), "content");
 
@@ -54,39 +67,20 @@ function readDir(dir: string): string[] {
 }
 
 function readFile(dir: string, file: string) {
-  const raw = fs.readFileSync(path.join(CONTENT_ROOT, dir, file), "utf8");
-  return matter(raw);
+  return fs.readFileSync(path.join(CONTENT_ROOT, dir, file), "utf8");
 }
 
 function toSlug(file: string) {
   return file.replace(/\.mdx?$/, "");
 }
 
-function asString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
-function asDateString(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  return "";
-}
-
-function asBoolean(value: unknown, fallback = false): boolean {
-  return typeof value === "boolean" ? value : fallback;
-}
-
-function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === "number" ? value : fallback;
-}
-
-function asTags(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((tag): tag is string => typeof tag === "string");
-  }
-  return [];
+function fileForSlug(directory: string, slug: string): string | undefined {
+  if (!isContentSlug(slug)) return undefined;
+  const files = [slug + ".md", slug + ".mdx"].filter((file) =>
+    fs.existsSync(path.join(CONTENT_ROOT, directory, file)),
+  );
+  if (files.length > 1) contentError(`content/${directory}`, "slug", `不能重复：${slug}`);
+  return files[0];
 }
 
 /**
@@ -129,29 +123,32 @@ function pickSection(sections: Record<string, string>, keys: string[]): string {
   return "";
 }
 
-export function getAllWork(): WorkPost[] {
-  const items = readDir("work").map((file) => {
-    const { data, content } = readFile("work", file);
-    const sections = splitSections(content);
-    return {
-      slug: toSlug(file),
-      title: asString(data.title, toSlug(file)),
-      summary: asString(data.summary),
-      role: asString(data.role, "产品练习"),
-      period: asString(data.period),
-      tags: asTags(data.tags),
-      accent: asString(data.accent, "blue"),
-      placeholder: asBoolean(data.placeholder, true),
-      order: asNumber(data.order, 99),
-      featured: asBoolean(data.featured, false),
-      cover: asString(data.cover) || undefined,
-      background: pickSection(sections, ["背景/问题", "背景 / 问题", "背景"]),
-      actions: pickSection(sections, ["我做了什么", "过程"]),
-      outcome: pickSection(sections, ["结果与反思", "结果", "反思"]),
-      body: content.trim(),
-    } satisfies WorkPost;
-  });
+export function parseWorkContent(file: string, raw: string): WorkPost {
+  const source = `content/work/${file}`;
+  const { data, body } = parseFrontmatter(source, raw);
+  const sections = splitSections(body);
+  return {
+    slug: requireContentSlug(source, toSlug(file)),
+    title: requireContentString(source, "title", data.title),
+    summary: requireContentString(source, "summary", data.summary),
+    role: requireContentString(source, "role", data.role),
+    period: requireContentString(source, "period", data.period),
+    tags: contentTags(source, data.tags),
+    accent: data.accent === undefined ? "blue" : requireContentString(source, "accent", data.accent),
+    placeholder: requireContentBoolean(source, "placeholder", data.placeholder),
+    order: requireContentOrder(source, data.order),
+    featured: requireContentBoolean(source, "featured", data.featured),
+    cover: optionalContentCover(source, data.cover),
+    background: requireContentString(source, "背景 / 问题", pickSection(sections, ["背景/问题", "背景 / 问题", "背景"])),
+    actions: requireContentString(source, "我做了什么", pickSection(sections, ["我做了什么", "过程"])),
+    outcome: requireContentString(source, "结果与反思", pickSection(sections, ["结果与反思", "结果", "反思"])),
+    body,
+  };
+}
 
+export function getAllWork(): WorkPost[] {
+  const items = readDir("work").map((file) => parseWorkContent(file, readFile("work", file)));
+  assertUniqueSlugs("content/work", items);
   return items.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
 }
 
@@ -160,7 +157,8 @@ export function getWorkSlugs(): string[] {
 }
 
 export function getWorkBySlug(slug: string): WorkPost | undefined {
-  return getAllWork().find((item) => item.slug === slug);
+  const file = fileForSlug("work", slug);
+  return file ? parseWorkContent(file, readFile("work", file)) : undefined;
 }
 
 export function getFeaturedWork(limit = 3): WorkPost[] {
@@ -169,22 +167,25 @@ export function getFeaturedWork(limit = 3): WorkPost[] {
   return (featured.length > 0 ? featured : all).slice(0, limit);
 }
 
-export function getAllPosts(): BlogPost[] {
-  const items = readDir("blog").map((file) => {
-    const { data, content } = readFile("blog", file);
-    return {
-      slug: toSlug(file),
-      title: asString(data.title, toSlug(file)),
-      summary: asString(data.summary),
-      date: asDateString(data.date),
-      readingTime: asString(data.readingTime, ""),
-      tags: asTags(data.tags),
-      placeholder: asBoolean(data.placeholder, true),
-      cover: asString(data.cover) || undefined,
-      body: content.trim(),
-    } satisfies BlogPost;
-  });
+export function parseBlogContent(file: string, raw: string): BlogPost {
+  const source = `content/blog/${file}`;
+  const { data, body } = parseFrontmatter(source, raw);
+  return {
+    slug: requireContentSlug(source, toSlug(file)),
+    title: requireContentString(source, "title", data.title),
+    summary: requireContentString(source, "summary", data.summary),
+    date: requireContentDate(source, "date", data.date),
+    readingTime: estimateReadingTime(body),
+    tags: contentTags(source, data.tags),
+    placeholder: requireContentBoolean(source, "placeholder", data.placeholder),
+    cover: optionalContentCover(source, data.cover),
+    body,
+  };
+}
 
+export function getAllPosts(): BlogPost[] {
+  const items = readDir("blog").map((file) => parseBlogContent(file, readFile("blog", file)));
+  assertUniqueSlugs("content/blog", items);
   return items.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
 
@@ -193,7 +194,8 @@ export function getPostSlugs(): string[] {
 }
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
-  return getAllPosts().find((item) => item.slug === slug);
+  const file = fileForSlug("blog", slug);
+  return file ? parseBlogContent(file, readFile("blog", file)) : undefined;
 }
 
 export function getLatestPosts(limit = 3): BlogPost[] {
@@ -210,7 +212,8 @@ export function getAllTags(): string[] {
 
 export function formatDate(date: string): string {
   if (!date) return "";
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return date;
-  return `${parsed.getFullYear()} 年 ${parsed.getMonth() + 1} 月 ${parsed.getDate()} 日`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  // Calendar dates must not shift by a day with the server's timezone.
+  const [year, month, day] = date.split("-").map(Number);
+  return `${year} 年 ${month} 月 ${day} 日`;
 }

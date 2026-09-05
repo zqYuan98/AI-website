@@ -1,0 +1,46 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Checks, build and production smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - name: Install frozen dependencies
+        run: bun ci
+      - name: Check and build
+        run: bun run build
+      - name: Production HTTP smoke
+        shell: bash
+        run: |
+          bun run start --hostname 127.0.0.1 --port 3100 > "$RUNNER_TEMP/notvitamin-next.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          if ! bun run check:smoke http://127.0.0.1:3100; then
+            cat "$RUNNER_TEMP/notvitamin-next.log"
+            exit 1
+          fi

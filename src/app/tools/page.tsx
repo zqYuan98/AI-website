@@ -91,7 +91,12 @@ export default function ToolsPage() {
               工具不是答案，<span>工作流才是。</span>
             </h1>
             <p className={styles.heroLead}>
-              从 AI、产品与设计，到开发、部署和日常效率，把会用到的工具收在一起。经过实践的精选，再写清选择理由与适用边界。
+              <span className={styles.desktopOnly}>
+                从 AI、产品与设计，到开发、部署和日常效率，把会用到的工具收在一起。经过实践的精选，再写清选择理由与适用边界。
+              </span>
+              <span className={styles.mobileOnly}>
+                收藏 AI、产品、设计与开发工具，按用途找到下一步。
+              </span>
             </p>
             <div className={styles.heroMeta} aria-label="工具箱内容概览">
               <span>
@@ -142,6 +147,9 @@ export default function ToolsPage() {
           </div>
         ) : null}
 
+        <p className={styles.mobileIntro}>
+          普通收藏供探索；维他命精选另附实践与适用边界。
+        </p>
         <ToolsExplorer tools={tools.map(toPublicTool)} recommendations={recommendations} />
 
         <p className="mt-5 text-xs leading-6 text-foreground-muted">

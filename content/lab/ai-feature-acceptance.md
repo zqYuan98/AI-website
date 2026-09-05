@@ -7,7 +7,7 @@ usage: 按五组逐项勾选，并为每个已勾选项准备可复查的证据�
 limitation: 清单帮助发现缺口，不自动等于验收结论；行业规范、安全等级与业务责任仍需由项目相关方确认。
 featured: true
 order: 1
-updatedAt: 2026-09-04
+updatedAt: "2026-09-04"
 cover: /images/lab/acceptance-loop.png
 coverAlt: 候选结果经过人工确认、证据留存和失败回退形成验收闭环
 ---

@@ -49,7 +49,20 @@ function HeaderForPath({ pathname }: { pathname: string }) {
   }, [open]);
 
   return (
-    <header className="site-header sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur-md">
+    <header
+      className="site-header sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur-md"
+      onBlur={(event) => {
+        // A missing next target can be a touch interaction; let the link's
+        // click finish before its existing handler closes the disclosure.
+        if (
+          open &&
+          event.relatedTarget instanceof Node &&
+          !event.currentTarget.contains(event.relatedTarget)
+        ) {
+          setOpen(false);
+        }
+      }}
+    >
       <div className="container-page grid h-[60px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_auto_1fr]">
         <Link
           href="/"

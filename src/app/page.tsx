@@ -7,6 +7,7 @@ import { getFeaturedWork, getLatestPosts } from "@/lib/content";
 import { getFeaturedTools } from "@/lib/curation";
 import { ToolIcon } from "@/components/tools/tool-icon";
 import { site } from "@/lib/site";
+import { HeroMotion } from "@/components/home/hero-motion";
 
 const heroImageSizes = "(max-width: 899px) calc(100vw + 72px), 620px";
 const heroBaseImage = {
@@ -59,29 +60,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="home-hero-art animate-rise animate-delay-2 relative">
-            <div className="home-hero-halo" aria-hidden="true" />
-            <div className="home-hero-media">
-              <Image
-                {...heroBaseImage}
-                alt=""
-                loading="eager"
-                fetchPriority="high"
-                className="home-hero-layer home-hero-base"
-              />
-              <video
-                className="home-hero-motion home-hero-layer home-hero-image"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-                aria-hidden="true"
-              >
-                <source src="/images/home/hero-orbit-loop.mp4" type="video/mp4" />
-              </video>
-            </div>
-          </div>
+          <HeroMotion>
+            <Image
+              {...heroBaseImage}
+              alt=""
+              loading="eager"
+              fetchPriority="high"
+              className="home-hero-layer home-hero-base"
+            />
+          </HeroMotion>
         </div>
       </section>
 

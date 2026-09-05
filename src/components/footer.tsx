@@ -71,7 +71,7 @@ export function Footer() {
                 href={contactHref}
                 className="text-foreground-muted transition-colors hover:text-accent"
               >
-                写一封自我介绍
+                联系与合作
               </Link>
             </li>
           </ul>
