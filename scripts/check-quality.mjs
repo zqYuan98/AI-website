@@ -32,6 +32,7 @@ if (options[0] !== '--typecheck') {
   run('content', 'scripts/check-content.mjs');
   run('tools and local maintenance guards', 'scripts/check-tools.mjs');
   run('tool URL state and search', 'scripts/check-tools-state.mjs');
+  run('orbit interaction and media lifecycle', 'scripts/check-orbit-motion.mjs');
   run('lint', cli('eslint', 'eslint'), ['.', '--max-warnings=0']);
 }
 

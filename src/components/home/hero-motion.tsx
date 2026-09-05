@@ -1,178 +1,101 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-
-type MotionState = "initial" | "playing" | "paused" | "reduced" | "unavailable";
+import { createOrbitMotion, initialOrbitState } from "./orbit-motion";
+import { OrbitRobot } from "./orbit-robot";
 
 export function HeroMotion({ children }: { children: ReactNode }) {
   const artworkRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const toggleRef = useRef<(() => void) | null>(null);
-  const [motionState, setMotionState] = useState<MotionState>("initial");
+  const [state, setState] = useState(initialOrbitState);
 
   useEffect(() => {
     const artwork = artworkRef.current;
     const video = videoRef.current;
     if (!artwork || !video) return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
     const bounds = artwork.getBoundingClientRect();
     let inView = bounds.bottom > 0 && bounds.top < window.innerHeight;
-    let manuallyPaused = false;
-    let autoplayBlocked = false;
-    let unavailable = false;
-    let pending = false;
-    let attempt = 0;
-    let disposed = false;
-
-    const shouldPlay = () =>
-      !reducedMotion.matches &&
-      !document.hidden &&
-      inView &&
-      !manuallyPaused &&
-      !autoplayBlocked &&
-      !unavailable;
-
-    const pause = () => {
-      attempt += 1;
-      pending = false;
-      video.pause();
+    let pointerFrame = 0;
+    let pointer: { x: number; y: number } | null = null;
+    const neutral = () => {
+      cancelAnimationFrame(pointerFrame);
+      pointerFrame = 0;
+      pointer = null;
+      artwork.style.setProperty("--look-x", "0px");
+      artwork.style.setProperty("--look-y", "0px");
+      artwork.style.setProperty("--tilt", "0deg");
     };
-
-    const syncPlayback = () => {
-      if (disposed) return;
-
-      if (reducedMotion.matches) {
-        pause();
-        // CSS alone cannot prevent media requests. The server and first client
-        // render have no source; remove an existing source when the OS changes.
-        if (video.hasAttribute("src")) {
-          video.removeAttribute("src");
-          video.load();
-        }
-        setMotionState("reduced");
-        return;
-      }
-
-      if (!shouldPlay()) {
-        pause();
-        setMotionState(unavailable ? "unavailable" : "paused");
-        return;
-      }
-
-      if (!video.hasAttribute("src")) {
-        video.src = "/images/home/hero-orbit-loop.mp4";
-      }
-      if (!video.paused || pending) return;
-
-      pending = true;
-      const currentAttempt = ++attempt;
-      void video.play().then(() => {
-        if (disposed || currentAttempt !== attempt) return;
-        pending = false;
-        setMotionState(video.paused ? "paused" : "playing");
-      }).catch(() => {
-        if (disposed || currentAttempt !== attempt) return;
-        pending = false;
-        // A rejected autoplay waits for an explicit click, without retries on
-        // each viewport or visibility change.
-        autoplayBlocked = true;
-        setMotionState("paused");
+    const motion = createOrbitMotion(video, (next) => {
+      if (!next.playing) neutral();
+      setState(next);
+    });
+    const syncEnvironment = () => motion.environment({ reduced: reduced.matches, visible: inView && !document.hidden });
+    const onPointer = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || !fine.matches || !motion.getState().playing) return;
+      pointer = { x: event.clientX, y: event.clientY };
+      if (pointerFrame) return;
+      pointerFrame = requestAnimationFrame(() => {
+        pointerFrame = 0;
+        if (!pointer || !motion.getState().playing) return;
+        const robot = artwork.querySelector("[data-orbit-control]")?.getBoundingClientRect();
+        if (!robot) return;
+        const dx = Math.max(-1, Math.min(1, (pointer.x - robot.left - robot.width / 2) / 230));
+        const dy = Math.max(-1, Math.min(1, (pointer.y - robot.top - robot.height / 2) / 190));
+        artwork.style.setProperty("--look-x", `${dx * 4}px`);
+        artwork.style.setProperty("--look-y", `${dy * 2.5}px`);
+        artwork.style.setProperty("--tilt", `${dx * 5}deg`);
       });
     };
-
-    const onPlaying = () => {
-      if (shouldPlay()) setMotionState("playing");
-      else syncPlayback();
-    };
-    const onPause = () => {
-      setMotionState(
-        reducedMotion.matches ? "reduced" : unavailable ? "unavailable" : "paused",
-      );
-    };
-    const onError = () => {
-      if (!video.hasAttribute("src")) return;
-      unavailable = true;
-      syncPlayback();
-    };
-
-    toggleRef.current = () => {
-      if (reducedMotion.matches || unavailable) return;
-      manuallyPaused = pending || !video.paused;
-      if (!manuallyPaused) autoplayBlocked = false;
-      syncPlayback();
-    };
-
+    toggleRef.current = motion.toggle;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting === inView) return;
+      if (!entry || entry.isIntersecting === inView) return;
       inView = entry.isIntersecting;
-      syncPlayback();
+      syncEnvironment();
     });
     observer.observe(artwork);
-    reducedMotion.addEventListener("change", syncPlayback);
-    document.addEventListener("visibilitychange", syncPlayback);
-    video.addEventListener("playing", onPlaying);
-    video.addEventListener("pause", onPause);
-    video.addEventListener("error", onError);
-    const initialFrame = window.requestAnimationFrame(syncPlayback);
-
+    reduced.addEventListener("change", syncEnvironment);
+    fine.addEventListener("change", neutral);
+    document.addEventListener("visibilitychange", syncEnvironment);
+    artwork.addEventListener("pointermove", onPointer, { passive: true });
+    artwork.addEventListener("pointerleave", neutral);
+    artwork.addEventListener("focusout", neutral);
+    video.addEventListener("playing", motion.playing);
+    video.addEventListener("pause", motion.paused);
+    video.addEventListener("error", motion.error);
+    const initialFrame = requestAnimationFrame(syncEnvironment);
     return () => {
-      disposed = true;
       toggleRef.current = null;
-      window.cancelAnimationFrame(initialFrame);
+      cancelAnimationFrame(initialFrame);
+      neutral();
       observer.disconnect();
-      reducedMotion.removeEventListener("change", syncPlayback);
-      document.removeEventListener("visibilitychange", syncPlayback);
-      video.removeEventListener("playing", onPlaying);
-      video.removeEventListener("pause", onPause);
-      video.removeEventListener("error", onError);
-      pause();
-      if (video.hasAttribute("src")) {
-        video.removeAttribute("src");
-        video.load();
-      }
+      reduced.removeEventListener("change", syncEnvironment);
+      fine.removeEventListener("change", neutral);
+      document.removeEventListener("visibilitychange", syncEnvironment);
+      artwork.removeEventListener("pointermove", onPointer);
+      artwork.removeEventListener("pointerleave", neutral);
+      artwork.removeEventListener("focusout", neutral);
+      video.removeEventListener("playing", motion.playing);
+      video.removeEventListener("pause", motion.paused);
+      video.removeEventListener("error", motion.error);
+      motion.dispose();
     };
   }, []);
 
-  const playing = motionState === "playing";
-
   return (
-    <div
-      ref={artworkRef}
-      className="home-hero-art animate-rise animate-delay-2 relative"
-      data-motion-playing={playing}
-    >
-      <div className="home-hero-halo" aria-hidden="true" />
-      <div className="home-hero-media">
-        {children}
-        <video
-          ref={videoRef}
-          id="home-hero-video"
-          className="home-hero-motion home-hero-layer home-hero-image"
-          loop
-          muted
-          playsInline
-          preload="none"
-          aria-hidden="true"
-        />
+    <div ref={artworkRef} className="home-hero-art animate-rise animate-delay-2 relative"
+      data-motion-playing={state.playing} data-motion-unavailable={state.unavailable}>
+      <div className="home-hero-visual">
+        <div className="home-hero-halo" aria-hidden="true" />
+        <div className="home-hero-media">
+          {children}
+          <video ref={videoRef} id="home-hero-video" className="home-hero-motion home-hero-layer home-hero-image"
+            loop muted playsInline preload="none" aria-hidden="true" />
+        </div>
       </div>
-      {motionState === "playing" || motionState === "paused" ? (
-        <button
-          type="button"
-          className="home-hero-motion-control"
-          aria-controls="home-hero-video"
-          onClick={() => toggleRef.current?.()}
-        >
-          <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor">
-            {playing ? (
-              <path d="M4 3h3v10H4zm5 0h3v10H9z" />
-            ) : (
-              <path d="m5 2 8 6-8 6z" />
-            )}
-          </svg>
-          {playing ? "暂停动效" : "播放动效"}
-        </button>
-      ) : null}
+      <OrbitRobot state={state} onToggle={() => toggleRef.current?.()} />
     </div>
   );
 }

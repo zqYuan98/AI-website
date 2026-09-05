@@ -282,6 +282,12 @@
     min-width: 0;
   }
 
+  .home-hero-visual {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
   .home-hero-media {
     position: absolute;
     z-index: 1;
@@ -334,7 +340,8 @@
     opacity: 0.64;
   }
 
-  .home-hero-motion:not([src]) {
+  .home-hero-motion:not([src]),
+  .home-hero-art[data-motion-unavailable="true"] .home-hero-motion {
     visibility: hidden;
   }
 
@@ -345,37 +352,6 @@
   .home-hero-art[data-motion-playing="false"] .home-hero-media,
   .home-hero-art[data-motion-playing="false"] .home-hero-halo {
     animation-play-state: paused;
-  }
-
-  .home-hero-motion-control {
-    position: absolute;
-    z-index: 3;
-    top: 12px;
-    right: 0;
-    display: inline-flex;
-    min-height: 36px;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border: 1px solid #cfdcf2;
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.94);
-    color: #405077;
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .home-hero-motion-control:hover {
-    border-color: #9bbcff;
-    color: #0f62fe;
-  }
-
-  .home-hero-motion-control svg {
-    width: 12px;
-    height: 12px;
-    flex: none;
   }
 
   .home-hero-halo {
@@ -586,6 +562,9 @@
     height: 78vw;
     min-height: 268px;
     max-height: 350px;
+  }
+
+  .home-hero-visual {
     -webkit-mask-image: linear-gradient(
       to bottom,
       #000 0,
