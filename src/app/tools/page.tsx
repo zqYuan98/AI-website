@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { ToolsExplorer } from "@/components/tools/tools-explorer";
 import styles from "@/components/tools/tools.module.css";
-import { getAllRecommendations, getAllTools } from "@/lib/curation";
+import { getAllRecommendations, getAllTools, toPublicTool } from "@/lib/curation";
 import { site } from "@/lib/site";
 
 const title = "工具箱";
 const description =
-  "围绕 AI 工作流、产品研究、设计与工程的精选工具和权威资源；每一项都说明适用场景、选择理由与边界。";
+  "收藏 AI、产品、设计、开发与部署工具和阅读资源；按用途查找，已实践的精选另附选择理由与适用边界。";
 
 export const metadata: Metadata = {
   title,
@@ -90,7 +91,7 @@ export default function ToolsPage() {
               工具不是答案，<span>工作流才是。</span>
             </h1>
             <p className={styles.heroLead}>
-              这里不做链接仓库。只保留能进入真实任务的工具、方法与资料，并写清它适合谁、解决什么，以及什么时候不该选。
+              从 AI、产品与设计，到开发、部署和日常效率，把会用到的工具收在一起。经过实践的精选，再写清选择理由与适用边界。
             </p>
             <div className={styles.heroMeta} aria-label="工具箱内容概览">
               <span>
@@ -100,7 +101,7 @@ export default function ToolsPage() {
                 <strong>{recommendations.length}</strong> resources
               </span>
               <span>
-                <strong>1</strong> shared standard
+                <strong>{tools.filter((tool) => tool.featured).length}</strong> featured
               </span>
             </div>
           </div>
@@ -125,27 +126,39 @@ export default function ToolsPage() {
       <section id="curation" className={`container-page ${styles.curationSection}`}>
         <div className={styles.sectionIntro}>
           <div>
-            <p className={styles.sectionIndex}>02 / Curated set</p>
-            <h2>少一些收藏，多一些选择依据。</h2>
+            <p className={styles.sectionIndex}>02 / Tools & collections</p>
+            <h2>收藏有归处，选择有依据。</h2>
           </div>
           <p>
-            搜索会同时覆盖场景、适用对象、使用方式、替代项和限制。标记为「本站工作流在用」的内容，仅表示它能由当前站点流程直接验证。
+            按分类找到工具，或搜索名称、网址与用途。普通收藏不代表使用背书；「本站工作流在用」和详细短评仅保留给已有实践的工具。
           </p>
         </div>
 
-        <ToolsExplorer tools={tools} recommendations={recommendations} />
+        {process.env.NODE_ENV === "development" ? (
+          <div className="mb-4 flex justify-end">
+            <Link href="/tools/manage" className="rounded-lg border border-line bg-background-elevated px-4 py-2 text-sm font-semibold text-accent">
+              ＋ 添加工具（本地维护）
+            </Link>
+          </div>
+        ) : null}
+
+        <ToolsExplorer tools={tools.map(toPublicTool)} recommendations={recommendations} />
+
+        <p className="mt-5 text-xs leading-6 text-foreground-muted">
+          外部网站及其内容、价格、可用性可能变化，请以目标网站为准。
+        </p>
 
         <noscript>
           <div className={styles.noScript}>
-            <h2>精选工具</h2>
+            <h2>全部工具与收藏</h2>
             <ul>
               {tools.map((tool) => (
                 <li key={tool.slug}>
                   <a href={tool.url} target="_blank" rel="noopener noreferrer">
                     {tool.name}
                   </a>
-                  ：{tool.scenario} 适用边界：
-                  {tool.avoidWhen}
+                  ：{tool.scenario || tool.subcategory || tool.category}
+                  {tool.avoidWhen ? ` 适用边界：${tool.avoidWhen}` : ""}
                 </li>
               ))}
             </ul>

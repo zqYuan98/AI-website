@@ -5,6 +5,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { WorkCard } from "@/components/work-card";
 import { getFeaturedWork, getLatestPosts } from "@/lib/content";
 import { getFeaturedTools } from "@/lib/curation";
+import { ToolIcon } from "@/components/tools/tool-icon";
 import { site } from "@/lib/site";
 
 const heroImageSizes = "(max-width: 899px) calc(100vw + 72px), 620px";
@@ -125,9 +126,7 @@ export default function HomePage() {
                 className="group rounded-xl border border-line bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#9bbcff] hover:shadow-[0_14px_30px_rgba(25,66,140,0.09)]"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0f62fe] text-sm font-bold text-white">
-                    {tool.name.slice(0, 1)}
-                  </span>
+                  <ToolIcon name={tool.name} src={tool.icon} size={36} />
                   <span className="rounded-full bg-[#edf4ff] px-2 py-1 text-[10px] font-medium text-[#2363cf]">
                     站点在用
                   </span>

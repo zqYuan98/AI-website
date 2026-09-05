@@ -1,0 +1,20 @@
+.page { max-width: 44rem; padding-block: 3rem 5rem; }
+.back { color: var(--accent); font-size: .875rem; }
+.eyebrow { margin-top: 2.5rem; color: var(--accent); font-family: var(--font-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; }
+.page h1 { margin-top: .65rem; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; font-weight: 800; letter-spacing: -.04em; }
+.lead { margin-top: 1rem; color: var(--foreground-muted); line-height: 1.8; }
+.form { display: grid; gap: 1.25rem; margin-top: 2rem; padding: 1.5rem; border: 1px solid var(--border-color); border-radius: .8rem; background: var(--background-elevated); box-shadow: 0 .5rem 2rem rgb(15 23 42 / .04); }
+.form label { display: block; font-size: .875rem; font-weight: 600; }
+.form label span { color: var(--accent); }
+.form input, .form select, .form textarea { display: block; width: 100%; min-width: 0; margin-top: .5rem; padding: .7rem .85rem; border: 1px solid var(--border-color); border-radius: .5rem; background: var(--background); color: var(--foreground); font: inherit; font-size: 1rem; font-weight: 400; }
+.form summary { cursor: pointer; color: var(--foreground-muted); font-size: .85rem; }
+.optional { margin-top: .85rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.actions button { padding: .8rem 1.3rem; border-radius: .5rem; background: var(--accent); color: var(--accent-contrast); font-size: .875rem; font-weight: 650; cursor: pointer; }
+.actions button:disabled { cursor: wait; opacity: .6; }
+.actions a { color: var(--accent); font-size: .875rem; }
+.success, .error { padding: .8rem; border-radius: .5rem; font-size: .875rem; line-height: 1.7; }
+.success { background: var(--accent-soft); color: var(--foreground); }
+.error { background: color-mix(in srgb, #e34d59 9%, var(--background)); color: var(--foreground); }
+.note { margin-top: 1.25rem; color: var(--foreground-subtle); font-size: .8rem; line-height: 1.8; }
+@media(max-width: 40rem) { .page { padding-block: 2rem 3rem; } .form { padding: 1.1rem; } }

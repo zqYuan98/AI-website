@@ -3,17 +3,13 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { TOOL_CATEGORIES, isToolSubcategory, type ToolCategory } from "./tool-taxonomy";
+import { canonicalToolUrl, validatedToolUrl } from "./tool-url";
 
 const CONTENT_ROOT = path.join(process.cwd(), "content");
 
-export const TOOL_CATEGORIES = [
-  "AI 工作流",
-  "产品与研究",
-  "设计与原型",
-  "工程与数据",
-  "写作与知识管理",
-  "效率与系统",
-] as const;
+export { TOOL_CATEGORIES } from "./tool-taxonomy";
+export type { ToolCategory } from "./tool-taxonomy";
 
 export const RECOMMENDATION_TYPES = [
   "长文",
@@ -25,13 +21,17 @@ export const RECOMMENDATION_TYPES = [
   "书",
 ] as const;
 
-export type ToolCategory = (typeof TOOL_CATEGORIES)[number];
 export type RecommendationType = (typeof RECOMMENDATION_TYPES)[number];
 
 export type ToolEntry = {
   slug: string;
   name: string;
   category: ToolCategory;
+  subcategory: string;
+  icon: string;
+  collectionSource: string;
+  sourceCategories: string[];
+  linkStatus: "ok" | "restricted" | "unreachable" | "unchecked";
   scenario: string;
   audience: string;
   usage: string;
@@ -57,6 +57,30 @@ export type RecommendationEntry = {
   updatedAt: string;
   order: number;
 };
+
+export type PublicToolEntry = Omit<ToolEntry, "collectionSource" | "sourceCategories">;
+
+/** Keep import bookkeeping on the server, outside the public page payload. */
+export function toPublicTool(tool: ToolEntry): PublicToolEntry {
+  return {
+    slug: tool.slug,
+    name: tool.name,
+    category: tool.category,
+    subcategory: tool.subcategory,
+    icon: tool.icon,
+    linkStatus: tool.linkStatus,
+    scenario: tool.scenario,
+    audience: tool.audience,
+    usage: tool.usage,
+    avoidWhen: tool.avoidWhen,
+    alternatives: tool.alternatives,
+    url: tool.url,
+    usedByVitamin: tool.usedByVitamin,
+    featured: tool.featured,
+    updatedAt: tool.updatedAt,
+    order: tool.order,
+  };
+}
 
 const TOOL_FIELDS = [
   "name",
@@ -127,8 +151,9 @@ function assertExactFields(
   file: string,
   data: Record<string, unknown>,
   allowedFields: readonly string[],
+  optionalFields: readonly string[] = [],
 ) {
-  const unknown = Object.keys(data).filter((key) => !allowedFields.includes(key));
+  const unknown = Object.keys(data).filter((key) => !allowedFields.includes(key) && !optionalFields.includes(key));
   if (unknown.length > 0) {
     throw new Error(
       `[curation] ${file}: unknown frontmatter field${unknown.length > 1 ? "s" : ""}: ${unknown.join(", ")}`,
@@ -242,12 +267,27 @@ function assertUnique<T>(
 }
 
 export function getAllTools(): ToolEntry[] {
-  const tools = readMarkdownDirectory("tools").map(({ file, slug, data }) => {
-    assertExactFields(file, data, TOOL_FIELDS);
+  const iconMapPath = path.join(CONTENT_ROOT, "tool-icon-map.json");
+  const iconMap: Record<string, unknown> = fs.existsSync(iconMapPath)
+    ? JSON.parse(fs.readFileSync(iconMapPath, "utf8"))
+    : {};
+  const originalSubcategories: Record<string, string> = {
+    chatgpt: "对话与搜索", codex: "开发与数据", github: "开发与数据", vercel: "网站部署",
+    perplexity: "检索与研究", figma: "设计与原型", notebooklm: "检索与研究", obsidian: "笔记与资料",
+  };
+  const tools: ToolEntry[] = readMarkdownDirectory("tools").map(({ file, slug, data }) => {
+    assertExactFields(file, data, TOOL_FIELDS, ["subcategory", "icon"]);
+    const category = requireEnum(file, "category", data.category === "工程与数据" ? "开发与部署" : data.category, TOOL_CATEGORIES);
+    const subcategory = requireSubcategory(file, category, data.subcategory ?? originalSubcategories[slug] ?? "");
     return {
       slug,
       name: requireString(file, "name", data.name),
-      category: requireEnum(file, "category", data.category, TOOL_CATEGORIES),
+      category,
+      subcategory,
+      icon: requireLocalIcon(file, data.icon ?? iconMap[slug] ?? ""),
+      collectionSource: "",
+      sourceCategories: [],
+      linkStatus: "unchecked" as const,
       scenario: requireString(file, "scenario", data.scenario),
       audience: requireString(file, "audience", data.audience),
       usage: requireString(file, "usage", data.usage),
@@ -261,11 +301,67 @@ export function getAllTools(): ToolEntry[] {
     } satisfies ToolEntry;
   });
 
+  tools.push(...readToolCollection("tool-collection.json", 1000, iconMap));
+  tools.push(...readToolCollection("tool-custom.json", 10000, iconMap));
+
   assertUnique(tools, "tool slug", (tool) => tool.slug);
-  assertUnique(tools, "tool name", (tool) => tool.name.toLocaleLowerCase());
-  assertUnique(tools, "tool URL", (tool) => tool.url);
+  assertUnique(tools, "tool URL", (tool) => canonicalToolUrl(tool.url));
   assertUnique(tools, "tool order", (tool) => tool.order);
   return tools.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+}
+
+function requireSubcategory(file: string, category: ToolCategory, value: unknown) {
+  if (!isToolSubcategory(category, value)) fail(file, "subcategory", `does not belong to ${category}`);
+  return value;
+}
+
+function requireLocalIcon(file: string, value: unknown): string {
+  if (value === "") return "";
+  const icon = requireString(file, "icon", value);
+  if (!/^\/images\/tools\/icons\/[a-z0-9-]+\.(?:png|webp|ico)$/.test(icon)) {
+    fail(file, "icon", "must be a local, safely named tool icon");
+  }
+  if (!fs.existsSync(path.join(process.cwd(), "public", icon))) {
+    fail(file, "icon", `does not exist: ${icon}`);
+  }
+  return icon;
+}
+
+function readToolCollection(filename: string, startOrder: number, iconMap: Record<string, unknown>): ToolEntry[] {
+  const location = path.join(CONTENT_ROOT, filename);
+  if (!fs.existsSync(location)) return [];
+  const collection = JSON.parse(fs.readFileSync(location, "utf8"));
+  if (!collection || !Array.isArray(collection.tools) || !collection.source) {
+    throw new Error(`[curation] ${filename}: expected source and tools`);
+  }
+  const sourceName = requireString(filename, "source.name", collection.source.name);
+  const updatedAt = requireDate(filename, collection.source.importedAt);
+  return collection.tools.map((data: Record<string, unknown>, index: number) => {
+    const file = `content/${filename}[${index}]`;
+    assertExactFields(file, data, ["slug", "name", "url", "category", "subcategory", "scenario", "icon", "sourceCategories", "linkStatus"]);
+    const slug = requireString(file, "slug", data.slug);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) fail(file, "slug", "must be lowercase kebab-case");
+    const category = requireEnum(file, "category", data.category, TOOL_CATEGORIES);
+    if (typeof data.scenario !== "string") fail(file, "scenario", "must be a string");
+    if (!Array.isArray(data.sourceCategories) || !data.sourceCategories.every(v => typeof v === "string")) {
+      fail(file, "sourceCategories", "must be a string array");
+    }
+    return {
+      slug,
+      name: requireString(file, "name", data.name),
+      url: validatedToolUrl(data.url),
+      category,
+      subcategory: requireSubcategory(file, category, data.subcategory),
+      scenario: data.scenario.trim(),
+      icon: requireLocalIcon(file, data.icon || iconMap[slug] || ""),
+      collectionSource: sourceName,
+      sourceCategories: data.sourceCategories,
+      linkStatus: requireEnum(file, "linkStatus", data.linkStatus, ["ok", "restricted", "unreachable", "unchecked"] as const),
+      audience: "", usage: "", avoidWhen: "", alternatives: [],
+      usedByVitamin: false, featured: false,
+      updatedAt, order: startOrder + index,
+    } satisfies ToolEntry;
+  });
 }
 
 export function getFeaturedTools(limit = 4): ToolEntry[] {

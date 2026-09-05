@@ -1,0 +1,3392 @@
+{
+  "source": {
+    "name": "老王导航",
+    "url": "https://nav.eooce.com/",
+    "importedAt": "2026-09-05"
+  },
+  "tools": [
+    {
+      "slug": "nav-1",
+      "name": "Notification",
+      "url": "https://notification.eooce.xx.kg/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "通知消息管理入口。",
+      "icon": "/images/tools/icons/nav-1.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-2",
+      "name": "Youtube",
+      "url": "https://www.youtube.com/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "视频内容平台。",
+      "icon": "/images/tools/icons/nav-2.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-3",
+      "name": "Gmail",
+      "url": "https://mail.google.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Google 邮箱服务。",
+      "icon": "/images/tools/icons/nav-3.png",
+      "sourceCategories": [
+        "Home",
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-5",
+      "name": "ip.sb",
+      "url": "https://ip.ssss.nyc.mn/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "查询当前网络的 IP 地址信息。",
+      "icon": "/images/tools/icons/nav-5.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-6",
+      "name": "Cloudflare",
+      "url": "https://dash.cloudflare.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "CDN、域名解析与网站网络服务。",
+      "icon": "/images/tools/icons/nav-6.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-7",
+      "name": "自动访问系统",
+      "url": "https://matte.ct8.pl/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "网页定时访问管理工具。",
+      "icon": "/images/tools/icons/nav-7.png",
+      "sourceCategories": [
+        "Home",
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-8",
+      "name": "Huggingface",
+      "url": "https://huggingface.co/",
+      "category": "AI 工作流",
+      "subcategory": "模型与API",
+      "scenario": "模型、数据集与应用演示社区。",
+      "icon": "/images/tools/icons/nav-8.png",
+      "sourceCategories": [
+        "Home",
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-9",
+      "name": "ITDOG - 在线ping",
+      "url": "https://www.itdog.cn/tcping",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "在线 TCP 连通性检测。",
+      "icon": "/images/tools/icons/nav-9.ico",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-10",
+      "name": "Ping0",
+      "url": "https://ping0.cc/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "IP 地址与网络属性查询。",
+      "icon": "/images/tools/icons/nav-10.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-11",
+      "name": "浏览器指纹",
+      "url": "https://www.browserscan.net/zh",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "浏览器环境与指纹信息检测。",
+      "icon": "/images/tools/icons/nav-11.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-12",
+      "name": "nezha面板",
+      "url": "https://ssss.nyc.mn/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "服务器运行状态监控面板。",
+      "icon": "/images/tools/icons/nav-12.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-13",
+      "name": "Api测试",
+      "url": "https://hoppscotch.io/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "在浏览器中发送和调试 API 请求。",
+      "icon": "/images/tools/icons/nav-13.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-14",
+      "name": "域名检查",
+      "url": "https://who.cx/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "域名可用性查询。",
+      "icon": "/images/tools/icons/nav-14.ico",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-15",
+      "name": "域名比价",
+      "url": "https://www.nazhumi.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "域名服务价格比较。",
+      "icon": "/images/tools/icons/nav-15.ico",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-16",
+      "name": "NodeSeek",
+      "url": "https://www.nodeseek.com/",
+      "category": "产品与研究",
+      "subcategory": "检索与研究",
+      "scenario": "主机与服务器话题社区。",
+      "icon": "/images/tools/icons/nav-16.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-17",
+      "name": "Linux do",
+      "url": "https://linux.do/",
+      "category": "产品与研究",
+      "subcategory": "检索与研究",
+      "scenario": "技术交流社区。",
+      "icon": "/images/tools/icons/nav-17.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-18",
+      "name": "在线音乐",
+      "url": "https://music.eooce.com/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "在线音乐播放入口。",
+      "icon": "/images/tools/icons/nav-18.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-19",
+      "name": "Nodeloc",
+      "url": "https://www.nodeloc.com/",
+      "category": "产品与研究",
+      "subcategory": "检索与研究",
+      "scenario": "主机与技术交流社区。",
+      "icon": "/images/tools/icons/nav-19.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-20",
+      "name": "Moontv",
+      "url": "https://moontv.cfapps.jp10.hana.ondemand.com/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "影视内容检索与播放入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-21",
+      "name": "订阅转换",
+      "url": "https://sublink.eooce.com/",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "代理订阅格式转换。",
+      "icon": "/images/tools/icons/nav-21.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-22",
+      "name": "webssh",
+      "url": "https://ssh.eooce.com/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "浏览器 SSH 终端管理。",
+      "icon": "/images/tools/icons/nav-22.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-23",
+      "name": "文件快递柜",
+      "url": "https://filebox.nnuu.nyc.mn/",
+      "category": "写作与知识管理",
+      "subcategory": "笔记与资料",
+      "scenario": "文件上传与分享工具。",
+      "icon": "/images/tools/icons/nav-23.png",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-24",
+      "name": "真实地址生成",
+      "url": "https://address.nnuu.nyc.mn/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "地址格式生成工具。",
+      "icon": "/images/tools/icons/nav-24.ico",
+      "sourceCategories": [
+        "Home"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-26",
+      "name": "Claude",
+      "url": "https://claude.ai/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "Anthropic 的 AI 对话与协作工具。",
+      "icon": "/images/tools/icons/nav-26.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-27",
+      "name": "Deepseek",
+      "url": "https://www.deepseek.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "DeepSeek 模型与 AI 服务入口。",
+      "icon": "/images/tools/icons/nav-27.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-28",
+      "name": "Google Gemini",
+      "url": "https://gemini.google.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "Google 的 AI 对话与多模态助手。",
+      "icon": "/images/tools/icons/nav-28.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-29",
+      "name": "阿里千问",
+      "url": "https://chat.qwenlm.ai/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "通义千问 AI 对话入口。",
+      "icon": "/images/tools/icons/nav-29.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-30",
+      "name": "Kimi",
+      "url": "https://www.kimi.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "Kimi AI 对话助手。",
+      "icon": "/images/tools/icons/nav-30.ico",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-31",
+      "name": "阿里云",
+      "url": "https://www.aliyun.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "阿里云 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-31.ico",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-32",
+      "name": "腾讯云",
+      "url": "https://console.tencentcloud.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "腾讯云 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-32.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-33",
+      "name": "甲骨文云",
+      "url": "https://cloud.oracle.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "甲骨文云 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-33.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-34",
+      "name": "亚马逊云",
+      "url": "https://aws.amazon.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "亚马逊云 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-34.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-35",
+      "name": "DigitalOcean",
+      "url": "https://www.digitalocean.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "DigitalOcean 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-35.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-36",
+      "name": "Vultr",
+      "url": "https://www.vultr.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Vultr 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-36.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-37",
+      "name": "Hellowindows",
+      "url": "https://hellowindows.cn/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "Windows 与办公软件资源索引。",
+      "icon": "/images/tools/icons/nav-37.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-38",
+      "name": "奇迹秀",
+      "url": "https://www.qijishow.com/down",
+      "category": "设计与原型",
+      "subcategory": "图标与素材",
+      "scenario": "设计工具与素材资源索引。",
+      "icon": "/images/tools/icons/nav-38.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-39",
+      "name": "易破解",
+      "url": "https://www.ypojie.com/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "Windows 软件资源索引。",
+      "icon": "/images/tools/icons/nav-39.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-40",
+      "name": "Cracked Software",
+      "url": "https://topcracked.com/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "软件资源索引。",
+      "icon": "/images/tools/icons/nav-40.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-43",
+      "name": "Argo Tunnel json获取",
+      "url": "https://json.zone.id/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "Cloudflare Tunnel 配置辅助工具。",
+      "icon": "/images/tools/icons/nav-43.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-44",
+      "name": "base64工具",
+      "url": "https://www.qqxiuzi.cn/bianma/base64.htm",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Base64 编码与解码。",
+      "icon": "/images/tools/icons/nav-44.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-45",
+      "name": "二维码生成",
+      "url": "https://cli.im/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "二维码生成工具。",
+      "icon": "/images/tools/icons/nav-45.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-46",
+      "name": "JS混淆",
+      "url": "https://go.sssc.nyc.mn/js-obfuscator",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "JavaScript 代码混淆工具。",
+      "icon": "/images/tools/icons/nav-46.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-47",
+      "name": "Python混淆",
+      "url": "https://obf.eooce.com/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Python 代码混淆工具。",
+      "icon": "/images/tools/icons/nav-47.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-48",
+      "name": "Remove.photos",
+      "url": "https://remove.photos/zh-cn",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "图像背景移除工具。",
+      "icon": "/images/tools/icons/nav-48.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-50",
+      "name": "Outlook",
+      "url": "https://outlook.live.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Outlook 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-50.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-51",
+      "name": "Proton Mail",
+      "url": "https://account.proton.me/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Proton Mail 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-51.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "unchecked"
+    },
+    {
+      "slug": "nav-52",
+      "name": "临时域名邮箱",
+      "url": "https://temp-mail.io/zh",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "临时域名邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-52.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-53",
+      "name": "雅虎邮箱",
+      "url": "https://mail.yahoo.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "雅虎邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-53.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-54",
+      "name": "10分钟临时邮箱",
+      "url": "https://linshiyouxiang.net/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "10分钟临时邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-54.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-55",
+      "name": "Pagespeed",
+      "url": "https://pagespeed.web.dev/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "分析网页性能与加载体验。",
+      "icon": "/images/tools/icons/nav-55.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-56",
+      "name": "问小白",
+      "url": "https://www.wenxiaobai.com/chat",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "AI 对话与搜索工具。",
+      "icon": "/images/tools/icons/nav-56.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-57",
+      "name": "Genspark",
+      "url": "https://www.genspark.ai/agents?type=moa_chat",
+      "category": "AI 工作流",
+      "subcategory": "Agent与自动化",
+      "scenario": "多步骤 AI 任务与 Agent 工作台。",
+      "icon": "/images/tools/icons/nav-57.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-58",
+      "name": "AkashChat",
+      "url": "https://chat.akash.network/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "Akash 的 AI 对话入口。",
+      "icon": "/images/tools/icons/nav-58.ico",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-59",
+      "name": "V0",
+      "url": "https://v0.dev/chat",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "通过自然语言生成界面和应用。",
+      "icon": "/images/tools/icons/nav-59.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-60",
+      "name": "Same",
+      "url": "https://same.new/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "AI 辅助网页与界面开发。",
+      "icon": "/images/tools/icons/nav-60.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-61",
+      "name": "响指HaiSnap",
+      "url": "https://www.haisnap.com/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "AI 辅助应用搭建工具。",
+      "icon": "/images/tools/icons/nav-61.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-62",
+      "name": "Readdy",
+      "url": "https://readdy.ai/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "AI 辅助网站生成与编辑。",
+      "icon": "/images/tools/icons/nav-62.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-63",
+      "name": "Openrouter",
+      "url": "https://openrouter.ai/",
+      "category": "AI 工作流",
+      "subcategory": "模型与API",
+      "scenario": "多模型 API 接入平台。",
+      "icon": "/images/tools/icons/nav-63.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-64",
+      "name": "Manus",
+      "url": "https://manus.im/",
+      "category": "AI 工作流",
+      "subcategory": "Agent与自动化",
+      "scenario": "执行多步骤任务的 AI Agent。",
+      "icon": "/images/tools/icons/nav-64.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-66",
+      "name": "Grok",
+      "url": "https://grok.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "Grok AI 对话助手。",
+      "icon": "/images/tools/icons/nav-66.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-67",
+      "name": "Copilot",
+      "url": "https://copilot.microsoft.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "Microsoft AI 对话助手。",
+      "icon": "/images/tools/icons/nav-67.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-68",
+      "name": "豆包",
+      "url": "https://www.doubao.com/chat/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "豆包 AI 对话与创作助手。",
+      "icon": "/images/tools/icons/nav-68.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-69",
+      "name": "文心一言",
+      "url": "https://yiyan.baidu.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "百度 AI 对话助手入口。",
+      "icon": "/images/tools/icons/nav-69.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-70",
+      "name": "Jules",
+      "url": "https://jules.google.com/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "Google 的 AI 编程任务工具。",
+      "icon": "/images/tools/icons/nav-70.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-72",
+      "name": "硅基流动",
+      "url": "https://cloud.siliconflow.cn/",
+      "category": "AI 工作流",
+      "subcategory": "模型与API",
+      "scenario": "模型推理与 API 服务平台。",
+      "icon": "/images/tools/icons/nav-72.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-73",
+      "name": "Kilo Code",
+      "url": "https://www.kilocode.ai/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "AI 辅助编程工具。",
+      "icon": "/images/tools/icons/nav-73.ico",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-74",
+      "name": "Cursor",
+      "url": "https://cursor.com/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "面向代码编写与修改的 AI 编辑器。",
+      "icon": "/images/tools/icons/nav-74.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-75",
+      "name": "谷歌云",
+      "url": "https://cloud.google.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "谷歌云 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-75.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-76",
+      "name": "Azure",
+      "url": "https://azure.microsoft.com/zh-cn/free/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Azure 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-76.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-77",
+      "name": "Linode",
+      "url": "https://www.linode.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Linode 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-77.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-78",
+      "name": "Cloudcone",
+      "url": "https://app.cloudcone.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Cloudcone 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-78.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-79",
+      "name": "Dartnode",
+      "url": "https://dartnode.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Dartnode 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-79.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-80",
+      "name": "DMIT",
+      "url": "https://www.dmit.io/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "DMIT 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-80.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-81",
+      "name": "Bandwagonhost",
+      "url": "https://bandwagonhost.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Bandwagonhost 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-81.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-82",
+      "name": "Racknerd",
+      "url": "https://my.racknerd.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Racknerd 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-82.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-83",
+      "name": "Atlantic",
+      "url": "https://cloud.atlantic.net/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Atlantic 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-83.ico",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-84",
+      "name": "Lightnode",
+      "url": "https://www.lightnode.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Lightnode 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-84.ico",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-85",
+      "name": "ishosting",
+      "url": "https://www.ishosting.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "ishosting 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-85.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-86",
+      "name": "Diylink",
+      "url": "https://console.diylink.net/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Diylink 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-86.ico",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-88",
+      "name": "Cron-job",
+      "url": "https://console.cron-job.org/jobs",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "定时触发网页请求。",
+      "icon": "/images/tools/icons/nav-88.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-89",
+      "name": "网址缩短",
+      "url": "https://short.ssss.nyc.mn/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "网址缩短服务。",
+      "icon": "/images/tools/icons/nav-89.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-90",
+      "name": "zTasker",
+      "url": "https://www.everauto.net/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "定时任务、快捷键与桌面流程自动化。",
+      "icon": "",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-91",
+      "name": "Linuxmirrors",
+      "url": "https://linuxmirrors.cn/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Linux 软件镜像源配置资料。",
+      "icon": "/images/tools/icons/nav-91.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-92",
+      "name": "incogniton",
+      "url": "https://incogniton.com/zh-hans",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "浏览器多环境管理工具。",
+      "icon": "/images/tools/icons/nav-92.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-93",
+      "name": "Koyeb",
+      "url": "https://app.koyeb.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Koyeb 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-93.ico",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-94",
+      "name": "Render",
+      "url": "https://dashboard.render.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Render 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-94.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-95",
+      "name": "Fly",
+      "url": "https://fly.io/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Fly 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-95.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-96",
+      "name": "Northflank",
+      "url": "https://app.northflank.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Northflank 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-96.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-97",
+      "name": "Choreo",
+      "url": "https://console.choreo.dev/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Choreo 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-97.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-98",
+      "name": "Railway",
+      "url": "https://railway.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Railway 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-98.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-99",
+      "name": "Galaxycloud",
+      "url": "https://beta.galaxycloud.app/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Galaxycloud 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-99.ico",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-100",
+      "name": "Azure容器",
+      "url": "https://azure.microsoft.com/en-us/pricing/offers/ms-azr-0144p",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Azure容器 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-100.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-101",
+      "name": "Codered",
+      "url": "https://app.codered.cloud/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Codered 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-101.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-102",
+      "name": "Shuttle",
+      "url": "https://console.shuttle.dev/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Shuttle 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-102.ico",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-103",
+      "name": "Serv00",
+      "url": "https://www.serv00.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Serv00 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-103.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-104",
+      "name": "CT8",
+      "url": "https://www.ct8.pl/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "CT8 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-104.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-105",
+      "name": "Claw",
+      "url": "https://console.run.claw.cloud/signin?link=FZHSTH7HEBTU",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Claw 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-105.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "unchecked"
+    },
+    {
+      "slug": "nav-106",
+      "name": "Cloudcat",
+      "url": "https://cloud.cloudcat.one/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Cloudcat 应用与容器托管入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-107",
+      "name": "IBM",
+      "url": "https://linuxone.cloud.marist.edu/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "IBM 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-107.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-108",
+      "name": "Sharon",
+      "url": "https://whmcs.sharon.io/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Sharon 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-108.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-109",
+      "name": "Alice",
+      "url": "https://alicenetworks.net/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Alice 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-109.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-111",
+      "name": "Alwaysdata",
+      "url": "https://admin.alwaysdata.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Alwaysdata 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-111.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "unchecked"
+    },
+    {
+      "slug": "nav-113",
+      "name": "Netlify",
+      "url": "https://www.netlify.com/",
+      "category": "开发与部署",
+      "subcategory": "网站部署",
+      "scenario": "",
+      "icon": "/images/tools/icons/nav-113.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-115",
+      "name": "Vocalremover",
+      "url": "https://vocalremover.org/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "音轨与人声分离工具。",
+      "icon": "/images/tools/icons/nav-115.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-116",
+      "name": "云萌Win10/11激活",
+      "url": "https://cmwtat.cloudmoe.com/cn.html",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "Windows 激活相关工具入口。",
+      "icon": "/images/tools/icons/nav-116.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-117",
+      "name": "JSON工具",
+      "url": "https://www.json.cn/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "JSON 格式化与语法校验。",
+      "icon": "/images/tools/icons/nav-117.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-118",
+      "name": "Ai一键换脸",
+      "url": "https://imgai.ai/zh",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "AI 图像编辑工具。",
+      "icon": "/images/tools/icons/nav-118.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-119",
+      "name": "Aippt",
+      "url": "https://www.aippt.cn/",
+      "category": "设计与原型",
+      "subcategory": "设计与原型",
+      "scenario": "AI 辅助演示文稿制作。",
+      "icon": "/images/tools/icons/nav-119.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-120",
+      "name": "文件格式转换",
+      "url": "https://convertio.co/zh",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "在线文件格式转换。",
+      "icon": "/images/tools/icons/nav-120.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-121",
+      "name": "视频在线下载",
+      "url": "https://tubedown.cn/youtube",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "在线视频链接解析工具。",
+      "icon": "/images/tools/icons/nav-121.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-122",
+      "name": "Zen-browser",
+      "url": "https://zen-browser.app/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "桌面浏览器。",
+      "icon": "/images/tools/icons/nav-122.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-123",
+      "name": "Adspower",
+      "url": "https://activity.adspower.com/ap/dist",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "浏览器多环境管理工具。",
+      "icon": "/images/tools/icons/nav-123.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-124",
+      "name": "Termora",
+      "url": "https://www.termora.app/downloads",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "SSH 连接与终端管理软件。",
+      "icon": "/images/tools/icons/nav-124.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-125",
+      "name": "Cherry Studio",
+      "url": "https://www.cherry-ai.com/",
+      "category": "AI 工作流",
+      "subcategory": "对话与搜索",
+      "scenario": "多模型 AI 对话客户端。",
+      "icon": "/images/tools/icons/nav-125.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-126",
+      "name": "MusicFree",
+      "url": "https://musicfree.catcat.work/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "音乐播放器项目。",
+      "icon": "/images/tools/icons/nav-126.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-127",
+      "name": "LXmusic",
+      "url": "https://lxmusic.toside.cn/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "桌面音乐播放器项目。",
+      "icon": "/images/tools/icons/nav-127.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-128",
+      "name": "UU远程",
+      "url": "https://uuyc.163.com/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "远程桌面控制工具。",
+      "icon": "/images/tools/icons/nav-128.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-130",
+      "name": "QtScrcpy",
+      "url": "https://github.com/barry-ran/QtScrcpy/releases/latest",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Android 屏幕投射与控制项目。",
+      "icon": "/images/tools/icons/nav-130.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-131",
+      "name": "it tools",
+      "url": "https://it.idev.dev/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "开发与编码小工具集合。",
+      "icon": "/images/tools/icons/nav-131.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-132",
+      "name": "Ai照片修复",
+      "url": "https://picwish.cn/photo-enhancer",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "AI 图像清晰度增强工具。",
+      "icon": "/images/tools/icons/nav-132.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-134",
+      "name": "emoji大全",
+      "url": "https://www.iamwawa.cn/emoji.html",
+      "category": "设计与原型",
+      "subcategory": "图标与素材",
+      "scenario": "Emoji 分类查询。",
+      "icon": "/images/tools/icons/nav-134.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-135",
+      "name": "信用卡生成",
+      "url": "https://bincheck.io/zh/credit-card-generator",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "支付表单测试数据生成工具。",
+      "icon": "/images/tools/icons/nav-135.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-137",
+      "name": "Squoosh",
+      "url": "https://squoosh.app/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "图像压缩与格式转换。",
+      "icon": "/images/tools/icons/nav-137.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-138",
+      "name": "Bolt",
+      "url": "https://bolt.new/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "用 AI 构建 Web 应用。",
+      "icon": "/images/tools/icons/nav-138.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-139",
+      "name": "Llamacoder",
+      "url": "https://llamacoder.together.ai/",
+      "category": "AI 工作流",
+      "subcategory": "AI编程",
+      "scenario": "AI 应用代码生成工具。",
+      "icon": "/images/tools/icons/nav-139.ico",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-140",
+      "name": "Codia",
+      "url": "https://codia.ai/",
+      "category": "设计与原型",
+      "subcategory": "设计与原型",
+      "scenario": "设计稿与界面转换工具。",
+      "icon": "/images/tools/icons/nav-140.png",
+      "sourceCategories": [
+        "Ai-stuff"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-141",
+      "name": "Tool",
+      "url": "https://tool.lu/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "在线实用工具集合。",
+      "icon": "/images/tools/icons/nav-141.ico",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-142",
+      "name": "Yxvm",
+      "url": "https://yxvm.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Yxvm 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-142.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-143",
+      "name": "Cloudforest",
+      "url": "https://cloud.cloudforest.ro/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "Cloudforest 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-143.png",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-144",
+      "name": "华为云",
+      "url": "https://huaweicloud.com/",
+      "category": "开发与部署",
+      "subcategory": "云服务",
+      "scenario": "华为云 的云服务与主机管理入口。",
+      "icon": "/images/tools/icons/nav-144.ico",
+      "sourceCategories": [
+        "Cloud"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-145",
+      "name": "D1tools",
+      "url": "https://d1tools.com/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "在线实用工具集合。",
+      "icon": "/images/tools/icons/nav-145.ico",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-146",
+      "name": "Lumiproxy",
+      "url": "https://www.lumiproxy.com/zh-hans/online-proxy/proxysite",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "浏览器在线代理服务。",
+      "icon": "/images/tools/icons/nav-146.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-147",
+      "name": "Proxyshare",
+      "url": "https://www.proxyshare.com/zh/proxysite",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "浏览器在线代理服务。",
+      "icon": "/images/tools/icons/nav-147.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-148",
+      "name": "Dnsleaktest",
+      "url": "https://dnsleaktest.com/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "检查网络 DNS 查询出口。",
+      "icon": "/images/tools/icons/nav-148.ico",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-149",
+      "name": "Modal",
+      "url": "https://modal.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Modal 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-149.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-150",
+      "name": "Scalingo",
+      "url": "https://scalingo.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Scalingo 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-150.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-151",
+      "name": "Sevalla",
+      "url": "https://app.sevalla.com/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Sevalla 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-151.ico",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-152",
+      "name": "Phala",
+      "url": "https://cloud.phala.network/",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Phala 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-152.ico",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-153",
+      "name": "Wasmer",
+      "url": "https://wasmer.io/",
+      "category": "开发与部署",
+      "subcategory": "网站部署",
+      "scenario": "应用运行与网站托管平台。",
+      "icon": "/images/tools/icons/nav-153.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-154",
+      "name": "Appwrite",
+      "url": "https://cloud.appwrite.io/console",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Appwrite 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-154.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-155",
+      "name": "2925无限邮箱",
+      "url": "https://www.2925.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "2925无限邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-155.ico",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-156",
+      "name": "风车临时邮箱",
+      "url": "https://mail.xoxome.online/dashboard",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "风车临时邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-156.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-157",
+      "name": "88完美邮箱",
+      "url": "https://mail.88.com/mail/#/home",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "88完美邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-157.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-158",
+      "name": "临时edu邮箱",
+      "url": "https://tempmail.edu.kg/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "临时edu邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-158.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-159",
+      "name": "Tempmail",
+      "url": "https://tempmail.plus/zh/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Tempmail 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-159.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-160",
+      "name": "临时邮箱",
+      "url": "https://22.do/zh",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "临时邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-160.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-162",
+      "name": "nyc.mn域名",
+      "url": "https://dash.publiczone.org/dashboard",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "nyc.mn域名 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-162.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-163",
+      "name": "HiDNS",
+      "url": "https://www.hidoha.net/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "HiDNS 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-163.ico",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-164",
+      "name": "dpdns域名",
+      "url": "https://dash.domain.digitalplat.org/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "dpdns域名 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-164.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-165",
+      "name": "l53",
+      "url": "https://customer.l53.net/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "l53 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-165.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-166",
+      "name": "mffac临时邮箱",
+      "url": "https://www.mffac.com/moe",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "mffac临时邮箱 邮箱服务入口。",
+      "icon": "/images/tools/icons/nav-166.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-167",
+      "name": "zabc.net",
+      "url": "https://zabc.net/dashboard",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "zabc.net 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-167.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-168",
+      "name": "eu.org",
+      "url": "https://nic.eu.org/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "eu.org 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-168.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-169",
+      "name": "zone.id",
+      "url": "https://my.zone.id/subdomains",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "zone.id 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-169.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-170",
+      "name": "Spaceship",
+      "url": "https://www.spaceship.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Spaceship 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-170.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-171",
+      "name": "DNSHE",
+      "url": "https://my.dnshe.com/clientarea.php",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "DNSHE 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-171.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-172",
+      "name": "Godaddy",
+      "url": "https://www.godaddy.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Godaddy 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-172.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-173",
+      "name": "Namesilo",
+      "url": "https://www.namesilo.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Namesilo 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-173.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-174",
+      "name": "小丸工具箱",
+      "url": "https://maruko.appinn.me/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "音视频压缩与处理工具箱。",
+      "icon": "/images/tools/icons/nav-174.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-175",
+      "name": "Beekeeper studio",
+      "url": "https://www.beekeeperstudio.io/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "数据库查询与管理客户端。",
+      "icon": "/images/tools/icons/nav-175.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-176",
+      "name": "Navicat Premium",
+      "url": "https://pan.baidu.com/s/1HjfAn71Vgp-TeoY755TZOw?pwd=mc73",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "数据库管理软件相关资源链接。",
+      "icon": "/images/tools/icons/nav-176.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-177",
+      "name": "Geek Uninstaller",
+      "url": "https://geekuninstaller.com/download",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "Windows 软件卸载工具。",
+      "icon": "/images/tools/icons/nav-177.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-178",
+      "name": "Pixpin",
+      "url": "https://pixpin.cn/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "截图、贴图与图像记录工具。",
+      "icon": "/images/tools/icons/nav-178.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-179",
+      "name": "Mem Reduct",
+      "url": "https://github.com/henrypp/memreduct/releases/latest",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "Windows 内存管理工具。",
+      "icon": "/images/tools/icons/nav-179.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-196",
+      "name": "igoutu",
+      "url": "https://igoutu.cn/icons",
+      "category": "设计与原型",
+      "subcategory": "图标与素材",
+      "scenario": "图标素材检索与下载。",
+      "icon": "/images/tools/icons/nav-196.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-197",
+      "name": "iconfont",
+      "url": "https://www.iconfont.cn/",
+      "category": "设计与原型",
+      "subcategory": "图标与素材",
+      "scenario": "矢量图标管理与检索平台。",
+      "icon": "/images/tools/icons/nav-197.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-198",
+      "name": "Deobfuscator",
+      "url": "https://dev-coco.github.io/Online-Tools/JavaScript-Deobfuscator.html",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "JavaScript 代码反混淆工具。",
+      "icon": "/images/tools/icons/nav-198.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-199",
+      "name": "uiverse",
+      "url": "https://uiverse.io/elements",
+      "category": "设计与原型",
+      "subcategory": "设计与原型",
+      "scenario": "界面组件示例与样式资源。",
+      "icon": "/images/tools/icons/nav-199.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-200",
+      "name": "flexclip",
+      "url": "https://www.flexclip.com/cn/ai/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "在线视频制作与编辑工具。",
+      "icon": "/images/tools/icons/nav-200.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-201",
+      "name": "vueform",
+      "url": "https://vueform.com/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Vue 表单组件工具。",
+      "icon": "/images/tools/icons/nav-201.ico",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-202",
+      "name": "Adkynet",
+      "url": "https://manager.adkynet.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Adkynet 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-202.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-203",
+      "name": "V2rayN",
+      "url": "https://v2rayn.2dust.link/",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "V2rayN 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-203.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-204",
+      "name": "Mihomo Party",
+      "url": "https://mihomo.party/",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "Mihomo Party 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-204.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-205",
+      "name": "GUI.for.SingBox",
+      "url": "https://github.com/GUI-for-Cores/GUI.for.SingBox/releases/latest",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "GUI.for.SingBox 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-205.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-206",
+      "name": "FlClash",
+      "url": "https://github.com/chen08209/FlClash/releases/latest",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "FlClash 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-206.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-207",
+      "name": "Karing",
+      "url": "https://karing.app/download",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "Karing 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-207.ico",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-208",
+      "name": "Nekobox",
+      "url": "https://nekobox.tools/nekoray",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "Nekobox 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-208.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-209",
+      "name": "FlyClash",
+      "url": "https://github.com/GtxFury/FlyClash/releases/latest",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "FlyClash 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-209.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-210",
+      "name": "Macwk",
+      "url": "https://www.macwk.com/",
+      "category": "效率与系统",
+      "subcategory": "macOS",
+      "scenario": "Macwk 的 macOS 软件资源索引。",
+      "icon": "/images/tools/icons/nav-210.png",
+      "sourceCategories": [
+        "Software / Macos"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-211",
+      "name": "Macsc",
+      "url": "https://mac.macsc.com/",
+      "category": "效率与系统",
+      "subcategory": "macOS",
+      "scenario": "Macsc 的 macOS 软件资源索引。",
+      "icon": "/images/tools/icons/nav-211.ico",
+      "sourceCategories": [
+        "Software / Macos"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-212",
+      "name": "Daki",
+      "url": "https://dash.daki.cc/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Daki 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-212.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-213",
+      "name": "Crosmo",
+      "url": "https://host.crosmo.de/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Crosmo 游戏服务器与应用托管入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-214",
+      "name": "Flexynode",
+      "url": "https://flexynode.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Flexynode 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-214.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-215",
+      "name": "Boxmineworld",
+      "url": "https://dash.boxmineworld.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Boxmineworld 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-215.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-216",
+      "name": "wispbyte",
+      "url": "https://wispbyte.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "wispbyte 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-216.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-217",
+      "name": "phpstudy",
+      "url": "https://www.xp.cn/phpstudy",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "本地 Web 开发环境管理。",
+      "icon": "/images/tools/icons/nav-217.ico",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-218",
+      "name": "ghproxy",
+      "url": "https://ghproxy.eooce.xx.kg/",
+      "category": "开发与部署",
+      "subcategory": "网络调试",
+      "scenario": "GitHub 资源访问辅助服务。",
+      "icon": "/images/tools/icons/nav-218.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-220",
+      "name": "shell混淆",
+      "url": "https://zsh.hsk.sk/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Shell 脚本混淆工具。",
+      "icon": "/images/tools/icons/nav-220.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-221",
+      "name": "vitepress",
+      "url": "https://vitejs.cn/vitepress/",
+      "category": "开发与部署",
+      "subcategory": "网站部署",
+      "scenario": "以 Markdown 生成文档网站。",
+      "icon": "/images/tools/icons/nav-221.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-222",
+      "name": "Searcade",
+      "url": "https://searcade.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Searcade 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-222.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-223",
+      "name": "Echohost",
+      "url": "https://client.echohost.org/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Echohost 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-223.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-224",
+      "name": "Embotic",
+      "url": "https://dash.embotic.xyz/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Embotic 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-224.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-225",
+      "name": "Zenix",
+      "url": "https://dash.zenix.sg/dashboard",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Zenix 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-225.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-226",
+      "name": "Waifly",
+      "url": "https://dash.waifly.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Waifly 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-226.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-227",
+      "name": "karlo",
+      "url": "https://karlo-hosting.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "karlo 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-227.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-228",
+      "name": "solar",
+      "url": "https://account.solarhosting.cc/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "solar 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-228.ico",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unchecked"
+    },
+    {
+      "slug": "nav-229",
+      "name": "Berrynodes",
+      "url": "https://dash.berrynodes.com/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Berrynodes 游戏服务器与应用托管入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-230",
+      "name": "Spaceify",
+      "url": "https://client.spaceify.eu/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Spaceify 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-230.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-231",
+      "name": "Freeserver",
+      "url": "https://dash.freeserver.tw/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Freeserver 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-231.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-232",
+      "name": "Bot-hosting",
+      "url": "https://bot-hosting.net/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Bot-hosting 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-232.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-233",
+      "name": "Atomic",
+      "url": "https://panel.atomicnetworks.co/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Atomic 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-233.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-234",
+      "name": "Requestly",
+      "url": "https://requestly.com/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "HTTP 请求调试与 API 测试。",
+      "icon": "/images/tools/icons/nav-234.png",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-235",
+      "name": "Raylink",
+      "url": "https://www.raylink.live/",
+      "category": "效率与系统",
+      "subcategory": "软件应用",
+      "scenario": "远程桌面连接工具。",
+      "icon": "",
+      "sourceCategories": [
+        "Software"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-236",
+      "name": "Blackace",
+      "url": "https://blackace.app/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "网页封装为应用的工具。",
+      "icon": "/images/tools/icons/nav-236.ico",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-237",
+      "name": "ClashBox",
+      "url": "https://github.com/xiaobaigroup/ClashBox",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "ClashBox 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-237.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-238",
+      "name": "PHP混淆加密",
+      "url": "https://www.toolnb.com/tools/phpcarbylamine.html",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "PHP 代码混淆工具。",
+      "icon": "",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-240",
+      "name": "Zampto",
+      "url": "https://hosting.zampto.net/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Zampto 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-240.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-241",
+      "name": "smser",
+      "url": "https://smser.net/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "smser 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-241.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-242",
+      "name": "freereceivesms",
+      "url": "https://www.freereceivesms.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "freereceivesms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-242.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-243",
+      "name": "sms24",
+      "url": "https://sms24.me/en",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "sms24 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-243.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-244",
+      "name": "onlinesim",
+      "url": "https://onlinesim.io/ru/free_numbers",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "onlinesim 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-244.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-245",
+      "name": "smsonline",
+      "url": "https://www.smsonline.cloud/zh",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "smsonline 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-245.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-246",
+      "name": "receive-sms",
+      "url": "https://wetalkapp.com/receive-sms/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "receive-sms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-246.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-247",
+      "name": "supercloudsms",
+      "url": "https://www.supercloudsms.com/country/usa/1.html",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "supercloudsms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-247.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-248",
+      "name": "freephonenum",
+      "url": "https://freephonenum.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "freephonenum 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-248.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-249",
+      "name": "lubansms",
+      "url": "https://lubansms.com/receiveSms",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "lubansms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-249.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-250",
+      "name": "7sim",
+      "url": "http://7sim.net/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "7sim 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-250.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-251",
+      "name": "receiveasms",
+      "url": "https://www.receiveasms.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "receiveasms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-251.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-252",
+      "name": "receivesmsonline",
+      "url": "https://www.receivesmsonline.net/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "receivesmsonline 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-252.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-253",
+      "name": "sms-online",
+      "url": "https://sms-online.co/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "sms-online 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-253.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-254",
+      "name": "receivefreesms",
+      "url": "https://receivefreesms.net/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "receivefreesms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-254.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-255",
+      "name": "receivesmsonline",
+      "url": "https://receivesmsonline.in/number",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "receivesmsonline 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-255.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-256",
+      "name": "sms-receive",
+      "url": "https://sms-receive.net/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "sms-receive 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-256.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-257",
+      "name": "jiemahao",
+      "url": "https://jiemahao.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "jiemahao 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-257.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-258",
+      "name": "bestsms",
+      "url": "https://bestsms.xyz/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "bestsms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-258.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-259",
+      "name": "zusms",
+      "url": "https://www.zusms.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "zusms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-259.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-260",
+      "name": "mytrashmobile",
+      "url": "https://zh.mytrashmobile.com/numbers",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "mytrashmobile 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-260.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-261",
+      "name": "sms-japan",
+      "url": "https://sms-japan.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "sms-japan 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-261.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-262",
+      "name": "online-sim",
+      "url": "https://online-sim.pro/zh",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "online-sim 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-262.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-263",
+      "name": "temp-number",
+      "url": "https://temp-number.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "temp-number 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-263.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-264",
+      "name": "tiger-sms",
+      "url": "https://tiger-sms.shop/free",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "tiger-sms 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-264.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-265",
+      "name": "clearcode",
+      "url": "https://clearcode.cn/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "clearcode 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-265.ico",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-266",
+      "name": "tempsmss",
+      "url": "https://tempsmss.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "tempsmss 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-266.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-267",
+      "name": "free-numbers",
+      "url": "https://sms-verification-number.com/free-numbers-cn/#activity",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "free-numbers 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-267.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-268",
+      "name": "mianfeijiema",
+      "url": "https://www.mianfeijiema.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "mianfeijiema 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-268.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-269",
+      "name": "receive-smss",
+      "url": "https://receive-smss.com/",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "receive-smss 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-269.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-270",
+      "name": "sms-man",
+      "url": "https://sms-man.com/cn/free-numbers",
+      "category": "效率与系统",
+      "subcategory": "短信服务",
+      "scenario": "sms-man 的公开短信接收服务。",
+      "icon": "/images/tools/icons/nav-270.png",
+      "sourceCategories": [
+        "Tools / Free SMS"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-271",
+      "name": "SAP企业版",
+      "url": "https://emea.cockpit.btp.cloud.sap/cockpit/#",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "SAP企业版 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-271.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-272",
+      "name": "SAP试用版",
+      "url": "https://account.hanatrial.ondemand.com/trial/#/home/trial",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "SAP试用版 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-272.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "unchecked"
+    },
+    {
+      "slug": "nav-273",
+      "name": "Altare",
+      "url": "https://altare.sh/dashboard",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Altare 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-273.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-274",
+      "name": "Skybots",
+      "url": "https://skybots.tech/dashboard/mes-bots",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Skybots 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-274.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-275",
+      "name": "Leaflow",
+      "url": "https://www.leafaas.com/dashboard",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Leaflow 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-275.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-276",
+      "name": "Zeabur",
+      "url": "https://dash.zeabur.com/projects",
+      "category": "开发与部署",
+      "subcategory": "容器平台",
+      "scenario": "Zeabur 应用与容器托管入口。",
+      "icon": "/images/tools/icons/nav-276.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-277",
+      "name": "Greathost",
+      "url": "https://greathost.es/dashboard",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Greathost 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-277.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-278",
+      "name": "Lunes",
+      "url": "https://betadash.lunes.host/",
+      "category": "开发与部署",
+      "subcategory": "游戏服务器",
+      "scenario": "Lunes 游戏服务器与应用托管入口。",
+      "icon": "/images/tools/icons/nav-278.png",
+      "sourceCategories": [
+        "Container / Game Server"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-279",
+      "name": "Databricks",
+      "url": "https://www.databricks.com/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "",
+      "icon": "/images/tools/icons/nav-279.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-281",
+      "name": "idx",
+      "url": "https://idx.google.com/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "",
+      "icon": "/images/tools/icons/nav-281.png",
+      "sourceCategories": [
+        "Container"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-282",
+      "name": "icon",
+      "url": "https://icon-sets.iconify.design/",
+      "category": "设计与原型",
+      "subcategory": "图标与素材",
+      "scenario": "Iconify 图标集合检索。",
+      "icon": "/images/tools/icons/nav-282.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-283",
+      "name": "中文转码",
+      "url": "https://www.bchrt.com/tools/punycode-encoder/",
+      "category": "开发与部署",
+      "subcategory": "开发与数据",
+      "scenario": "Punycode 域名编码与解码。",
+      "icon": "/images/tools/icons/nav-283.png",
+      "sourceCategories": [
+        "Tools"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-284",
+      "name": "wallpaper",
+      "url": "https://haowallpaper.com/",
+      "category": "设计与原型",
+      "subcategory": "图标与素材",
+      "scenario": "壁纸素材检索。",
+      "icon": "/images/tools/icons/nav-284.png",
+      "sourceCategories": [
+        "Tools / Other"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-285",
+      "name": "GUI.for.Clash",
+      "url": "https://github.com/GUI-for-Cores/GUI.for.Clash/releases/latest",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "GUI.for.Clash 代理连接与配置工具。",
+      "icon": "/images/tools/icons/nav-285.png",
+      "sourceCategories": [
+        "Software / Proxy"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-286",
+      "name": "netlib.re",
+      "url": "https://www.netlib.re/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "netlib.re 域名注册与管理入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-287",
+      "name": "Namecheap",
+      "url": "https://www.namecheap.com/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "Namecheap 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-287.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-288",
+      "name": "gv.uy",
+      "url": "https://nic.gv.uy/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "gv.uy 域名注册与管理入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-289",
+      "name": "美国免税州地址生成",
+      "url": "https://usaddressgen.com/tax-free-address/",
+      "category": "效率与系统",
+      "subcategory": "在线工具",
+      "scenario": "地址格式生成工具。",
+      "icon": "/images/tools/icons/nav-289.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-290",
+      "name": "美国各州区号对照表",
+      "url": "https://amon.org/usphone",
+      "category": "产品与研究",
+      "subcategory": "检索与研究",
+      "scenario": "美国电话区号对照资料。",
+      "icon": "/images/tools/icons/nav-290.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-292",
+      "name": "星空音乐",
+      "url": "https://www.vh.hk/",
+      "category": "设计与原型",
+      "subcategory": "图像与音视频",
+      "scenario": "在线音乐入口。",
+      "icon": "",
+      "sourceCategories": [
+        "Tools / Other"
+      ],
+      "linkStatus": "unreachable"
+    },
+    {
+      "slug": "nav-293",
+      "name": "NN.KG",
+      "url": "https://www.idc.lc/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "NN.KG 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-293.ico",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "ok"
+    },
+    {
+      "slug": "nav-294",
+      "name": "VPS8",
+      "url": "https://vps8.zz.cd/",
+      "category": "开发与部署",
+      "subcategory": "域名与邮箱",
+      "scenario": "VPS8 域名注册与管理入口。",
+      "icon": "/images/tools/icons/nav-294.png",
+      "sourceCategories": [
+        "Mail & Domain"
+      ],
+      "linkStatus": "restricted"
+    },
+    {
+      "slug": "nav-295",
+      "name": "免费Socks5代理池",
+      "url": "https://proxy.scdn.io/",
+      "category": "效率与系统",
+      "subcategory": "网络代理",
+      "scenario": "SOCKS5 代理资源查询。",
+      "icon": "/images/tools/icons/nav-295.png",
+      "sourceCategories": [
+        "Dev"
+      ],
+      "linkStatus": "ok"
+    }
+  ]
+}
