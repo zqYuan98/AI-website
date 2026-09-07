@@ -73,8 +73,8 @@ Files: `scripts/check-quality.mjs`, `scripts/cloud-library.mjs`, `.env.example` 
 - [x] Run `D:\nodejs\node.exe scripts/check-quality.mjs --build`. Fix actual failures, then independent spec and security/quality reviews. No unrelated file staging.
 - [x] Verify offline/failed API does not block manual private import; verify public projection and ordinary unauthenticated pages remain unchanged.
 - [x] Configure an independent random production encryption key securely through already-authorized Vercel CLI without output. Apply additive migrations with existing production connection after local SQL/ACL validation, no destructive account/resource changes.
-- [ ] Deploy the reviewed commit via existing Git/Vercel process and check production anonymous access/privacy, login redirect, page availability and deployment status. No real private-resource changes or external AI calls in smoke checks.
-- [ ] Update docs to implemented status with measured limits and honest verification gaps; report owner settings path and that the user's API key can be entered there.
+- [x] Deploy the reviewed commit via existing Git/Vercel process and check production anonymous access/privacy, login redirect, page availability and deployment status. No real private-resource changes or external AI calls in smoke checks.
+- [x] Update docs to implemented status with measured limits and honest verification gaps; report owner settings path and that the user's API key can be entered there.
 
 ## Execution notes
 
@@ -82,4 +82,4 @@ The existing dedicated `codex/smart-bookmark-import-design` branch has a clean t
 
 Source design: `docs/superpowers/specs/2026-09-07-smart-bookmark-import-design.md` (approved by user). Workflow platform sources checked 2026-09-07: https://vercel.com/docs/workflows and https://vercel.com/docs/workflows/pricing. No plan upgrade or paid marketplace installation is part of this work.
 
-Implementation and local acceptance completed 2026-09-08. Full quality gate and production build passed. Production encryption key and additive migrations configured; release smoke verification pending. Actual measured coverage and untested real-provider boundary are recorded in docs/reports/2026-09-08-smart-import-verification.md. Root stages and commits all owned changes together after review; agents did not create separate commits.
+Implementation and local acceptance completed 2026-09-08. Full quality gate and production build passed. Production encryption key and additive migrations configured; release a8c6ad1 promoted and production smoke verification passed. Final report records the deployed application commit; documentation closeout stays on the current local task branch. Actual measured coverage and untested real-provider boundary are recorded in docs/reports/2026-09-08-smart-import-verification.md. Root stages and commits all owned changes together after review; agents did not create separate commits.
