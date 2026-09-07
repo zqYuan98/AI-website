@@ -254,15 +254,18 @@ try {
   assert.equal(independentConnections, 2, "Safe repeated provisioning must work without elevated ALTER options.");
 
   const publicPool = newPublicPool();
+  let publicClient;
   try {
-    await assertPublicLibraryRole(publicPool);
-    assert.equal((await readPublishedSnapshot(publicPool)).resources.length, 0);
-    await publicPool.query("SET default_transaction_read_only = off");
-    await assert.rejects(() => publicPool.query("SELECT state FROM library_private.state"), error => error.code === "42501");
-    await assert.rejects(() => publicPool.query("SELECT password_hash FROM public.library_auth_user"), error => error.code === "42501");
-    await assert.rejects(() => publicPool.query("DELETE FROM library_public.snapshot"), error => error.code === "42501");
-    await assert.rejects(() => publicPool.query("CREATE TABLE public.public_role_must_not_write (id int)"), error => error.code === "42501");
-  } finally { await publicPool.end(); }
+    publicClient = await publicPool.connect();
+    await assertPublicLibraryRole(publicClient);
+    assert.equal((await readPublishedSnapshot(publicClient)).resources.length, 0);
+    // Keep session state after expected ACL errors: Pool.query discards an errored connection.
+    await publicClient.query("SET default_transaction_read_only = off");
+    await assert.rejects(() => publicClient.query("SELECT state FROM library_private.state"), error => error.code === "42501");
+    await assert.rejects(() => publicClient.query("SELECT password_hash FROM public.library_auth_user"), error => error.code === "42501");
+    await assert.rejects(() => publicClient.query("DELETE FROM library_public.snapshot"), error => error.code === "42501");
+    await assert.rejects(() => publicClient.query("CREATE TABLE public.public_role_must_not_write (id int)"), error => error.code === "42501");
+  } finally { publicClient?.release(); await publicPool.end(); }
 
   const originalMarker = (await superQuery("SELECT shobj_description('vitamin_library_public'::regrole::oid, 'pg_authid') AS marker")).rows[0].marker;
   assert.match(originalMarker, /^vitamin-library-public:v2:/);

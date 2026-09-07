@@ -8,7 +8,7 @@ import styles from "./login-form.module.css";
 function signInError(status: number): string {
   if (status === 429) return "登录尝试较多，请稍等片刻再试。";
   if (status === 401 || status === 400) return "邮箱或密码不正确，请检查后重试。";
-  if (status === 403) return "当前账号无法进入资源库，请使用站点所有者账号登录。";
+  if (status === 403) return "请从本站登录页面重新操作；如果打开的是预览链接，请使用网站正式地址。";
   if (status === 404 || status === 503) return "登录服务尚未就绪，请稍后再试。";
   return "暂时无法登录，请稍后重试。";
 }

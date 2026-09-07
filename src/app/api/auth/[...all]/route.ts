@@ -6,16 +6,27 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "no-store, max-age=0", "Pragma": "no-cache", "Vary": "Cookie, Origin" };
 const fail = (status: number, message: string) => Response.json({ error: message, message }, { status, headers: NO_STORE });
 
+function hasCanonicalHost(request: Request, url: URL, canonical: URL): boolean {
+  // Next.js can normalize the internal URL behind a proxy. Only Host identifies
+  // the requested authority; forwarded headers cannot override this check.
+  const host = request.headers.get("host") ?? url.host;
+  if (!/^(?:[a-z0-9.-]+|\[[a-f0-9:.]+\])(?::[0-9]{1,5})?$/i.test(host)) return false;
+  try {
+    return new URL(`${canonical.protocol}//${host}`).host === canonical.host;
+  } catch { return false; }
+}
+
 /** Only the three browser operations needed by the single-owner application exist. */
 async function handle(request: Request) {
   if (!cloudLibraryEnabled()) return fail(404, "未找到页面。");
   try {
     const config = getCloudAuthConfig();
     const url = new URL(request.url);
+    const canonical = new URL(config.baseURL);
     const path = url.pathname;
     const allowed = request.method === "GET" ? path === "/api/auth/get-session" : request.method === "POST" && ["/api/auth/sign-in/email", "/api/auth/sign-out"].includes(path);
     if (!allowed) return fail(404, "未找到页面。");
-    if (url.origin !== config.baseURL || request.headers.get("sec-fetch-site") === "cross-site" || (request.method === "POST" && request.headers.get("origin") !== config.baseURL)) return fail(403, "请从本站页面重新操作。");
+    if (!hasCanonicalHost(request, url, canonical) || request.headers.get("sec-fetch-site") === "cross-site" || (request.method === "POST" && request.headers.get("origin") !== canonical.origin)) return fail(403, "请从本站页面重新操作。");
     if (request.method === "POST") {
       if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return fail(415, "请求格式不正确。");
       const reader = request.body?.getReader();

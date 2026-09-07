@@ -45,7 +45,7 @@ export async function provisionPublicRole(pool, publicValue, privateValue, optio
   const load = createTsLoader();
   const { publicDatabaseConnection } = load("src/lib/cloud-publication.ts");
   const url = publicDatabaseConnection(publicValue, privateValue);
-  if (decodeURIComponent(url.username) !== ROLE) throw new Error(`PUBLIC_DATABASE_URL must use the dedicated ${ROLE} role.`);
+  if (decodeURIComponent(url.username) !== ROLE) throw new Error(`LIBRARY_PUBLIC_DATABASE_URL must use the dedicated ${ROLE} role.`);
   if (new URL(privateValue).hostname.split(".")[0].endsWith("-pooler")) throw new Error("Role setup requires the direct administrative database endpoint.");
   const client = await pool.connect();
   let database;
@@ -104,9 +104,9 @@ export async function provisionPublicRole(pool, publicValue, privateValue, optio
 async function main() {
   if (fs.existsSync(".env.local")) process.loadEnvFile(".env.local");
   const adminUrl = selectAdminDatabaseUrl();
-  if (!adminUrl || !process.env.PUBLIC_DATABASE_URL) throw new Error("Set the direct DATABASE_ADMIN_URL and PUBLIC_DATABASE_URL in the private environment first.");
+  if (!adminUrl || !process.env.LIBRARY_PUBLIC_DATABASE_URL) throw new Error("Set the direct DATABASE_ADMIN_URL and LIBRARY_PUBLIC_DATABASE_URL in the private environment first.");
   const pool = new Pool({ connectionString: adminUrl, max: 1, connectionTimeoutMillis: 10000 });
-  try { console.log(JSON.stringify(await provisionPublicRole(pool, process.env.PUBLIC_DATABASE_URL, adminUrl), null, 2)); }
+  try { console.log(JSON.stringify(await provisionPublicRole(pool, process.env.LIBRARY_PUBLIC_DATABASE_URL, adminUrl), null, 2)); }
   finally { await pool.end(); }
 }
 

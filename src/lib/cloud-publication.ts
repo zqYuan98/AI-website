@@ -41,7 +41,7 @@ let publicPool: Pool | undefined;
 function getPublicPool(): Pool {
   if (publicPool) return publicPool;
   try {
-    const url = publicDatabaseConnection(process.env.PUBLIC_DATABASE_URL || "", process.env.DATABASE_URL || "");
+    const url = publicDatabaseConnection(process.env.LIBRARY_PUBLIC_DATABASE_URL || "", process.env.DATABASE_URL || "");
     publicPool = new Pool({ connectionString: url.toString(), max: 3, idleTimeoutMillis: 20000, connectionTimeoutMillis: 10000, allowExitOnIdle: true });
     publicPool.on("error", () => console.error("[cloud-library] Public database connection failed."));
     return publicPool;

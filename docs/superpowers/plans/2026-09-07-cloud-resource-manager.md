@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16.3.4, React 19, TypeScript, Better Auth, pg, Neon PostgreSQL.
 
-**Status:** Code, isolated PostgreSQL/auth checks, production build, closed-mode HTTP smoke and responsive local UI checks are complete. Real Neon/Vercel provisioning, production account setup, cross-device browser verification and deployment remain pending account access. See `docs/reports/2026-09-07-cloud-resource-manager-verification.md`.
+**Status (2026-09-07):** Implementation, the final quality gate/build, and real Neon auth/library checks are complete. Production environment preparation and the 274-resource published baseline are complete. Browser verification confirmed test-owner login, private saves, explicit publication, withdrawal, and logout; the disposable verification resource has been disconnected and deleted. The production owner account count is currently zero, so owner setup, final cloud activation, production deployment, and live verification remain pending. See `docs/reports/2026-09-07-cloud-resource-manager-verification.md`.
 
 ## 1. Configuration and owner authentication
 
@@ -40,13 +40,18 @@
 
 ## 5. Verification and deployment preparation
 
-- [ ] Run database-backed integration checks in an isolated test DB, existing quality gate and production build; inspect desktop/mobile login and manager flows.
-- [ ] Prepare exact Neon/Vercel configuration and account setup instructions. Use available authorized account access; if absent, request the concrete missing account step while finishing independent work.
-- [ ] Enable production only after schema, owner, publication baseline and environment variables are verified. Keep real private backups outside Git. Do not silently bind production data to preview or unrelated Vercel projects.
+- [x] Run default regression checks, the quality gate, and production build; complete real Neon auth and library integration checks against separate disposable targets in the verification project.
+- [x] Verify production/verification project isolation, production schema/state/snapshot readiness, and the published baseline of 274 resources without copying production private data into tests.
+- [x] Prepare Neon/Vercel configuration and account setup instructions. Required production secrets and connection variables are scoped to Production and marked Sensitive; the cloud-mode activation variable remains absent.
+- [x] Confirm browser login with the isolated test owner and successful private resource saves.
+- [x] Finish browser acceptance of explicit publication and withdrawal, including consistent public-page results and logout access checks. Prior local desktop/mobile layout checks remain valid; actual cross-device production login awaits deployment.
+- [x] Disconnect and delete the disposable verification resource after completing database and browser checks.
+- [ ] Complete the production owner's password setup and verify exactly one configured owner with a credential account. The latest read-only check found zero production users and zero credential accounts; this step is awaiting the user.
+- [ ] Enable cloud mode and deploy production only after owner setup and final acceptance pass. Final activation and deployment are still pending; keep real private backups outside Git and production data isolated from preview and unrelated projects.
 
 ## Contracts between parallel tasks
 
-- Config: `cloudLibraryEnabled(): boolean`; env `RESOURCE_LIBRARY_MODE=cloud`, `DATABASE_URL`, `PUBLIC_DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `LIBRARY_OWNER_ID`.
+- Config: `cloudLibraryEnabled(): boolean`; env `RESOURCE_LIBRARY_MODE=cloud`, `DATABASE_URL`, `LIBRARY_PUBLIC_DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `LIBRARY_OWNER_ID`.
 - DB: `getDatabasePool(): import('pg').Pool`; private/auth operations use server-only connection.
 - Auth: `getAuth()`; `getOwnerSession(headers: Headers)` returns an owner session or null; requires immutable owner ID.
 - Cloud library: `handleCloudLibraryAction(input: unknown, ownerId: string)`; list/mutation responses carry `libraryRevision`; mutation requests require `libraryRevision`; existing publish `revision` remains separate.
