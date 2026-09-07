@@ -4,7 +4,7 @@ import { PostCard } from "@/components/post-card";
 import { SectionHeading } from "@/components/section-heading";
 import { WorkCard } from "@/components/work-card";
 import { getFeaturedWork, getLatestPosts } from "@/lib/content";
-import { getFeaturedPublicResources } from "@/lib/public-resources";
+import { getSiteFeaturedResources } from "@/lib/site-resources";
 import { ToolIcon } from "@/components/tools/tool-icon";
 import { site } from "@/lib/site";
 import { HeroMotion } from "@/components/home/hero-motion";
@@ -18,10 +18,12 @@ const heroBaseImage = {
   sizes: heroImageSizes,
 } as const;
 
-export default function HomePage() {
+export const revalidate = 60;
+
+export default async function HomePage() {
   const featured = getFeaturedWork(3);
   const posts = getLatestPosts(3);
-  const tools = getFeaturedPublicResources(4);
+  const tools = await getSiteFeaturedResources(4);
 
   return (
     <>

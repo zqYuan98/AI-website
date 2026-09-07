@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   RESOURCE_PAGE_SIZE, filterPublicResources, indexPublicResources, parseResourceExplorerState,
@@ -99,7 +100,7 @@ export function PublicResourceExplorer({ resources }: { resources: PublicResourc
     </div>
     <div className={styles.navigationRow}>
       <nav className={styles.viewTabs} aria-label="资源视图">{VIEWS.map((view) => <button key={view.id} className={state.view === view.id ? styles.activeTab : ""} aria-current={state.view === view.id ? "page" : undefined} onClick={() => changeView(view.id)}>{view.label}</button>)}</nav>
-      <p className={styles.libraryCount}>{featuredResources.length} 个精选工具<span>·</span>{readingResources.length} 篇阅读资源</p>
+      <div className={styles.navigationActions}><p className={styles.libraryCount}>{featuredResources.length} 个精选工具<span>·</span>{readingResources.length} 篇阅读资源</p><Link href="/tools/manage" prefetch={false} className={styles.managementLink}>管理资源 <span aria-hidden="true">↗</span></Link></div>
     </div>
     {state.view === "featured" ? <div className={styles.featuredLayout}>
       <div className={styles.featuredContent}>

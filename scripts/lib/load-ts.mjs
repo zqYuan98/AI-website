@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 
 /** Load real TS modules in memory for checks without creating build artifacts. */
-export function createTsLoader(root = process.cwd()) {
+export function createTsLoader(root = process.cwd(), overrides = {}) {
   const modules = new Map();
   function load(relative) {
     const filename = path.resolve(root, relative);
@@ -13,6 +13,7 @@ export function createTsLoader(root = process.cwd()) {
     modules.set(filename, loaded);
     const localRequire = createRequire(filename);
     const require = (specifier) => {
+      if (Object.hasOwn(overrides, specifier)) return overrides[specifier];
       if (specifier === 'server-only') return {};
       if (specifier.startsWith('@/')) return load(`src/${specifier.slice(2)}.ts`);
       if (specifier.startsWith('.')) {

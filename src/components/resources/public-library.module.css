@@ -31,7 +31,10 @@
 .searchWrap input::-webkit-search-cancel-button { display: none; }
 .shortcut { padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 14px; line-height: 22px; }
 .clearSearch { width: 44px; height: 44px; font-size: 24px; cursor: pointer; }
-.navigationRow { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--border-strong); margin-top: 20px; }
+.navigationRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 20px; border-bottom: 1px solid var(--border-strong); margin-top: 20px; }
+.navigationActions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 20px; margin-left: auto; }
+.managementLink { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font-size: 14px; font-weight: 550; color: var(--foreground-muted); white-space: nowrap; }
+.managementLink:hover { color: var(--accent); }
 .viewTabs { display: flex; align-items: stretch; gap: 28px; }
 .viewTabs > button { position: relative; border: 0; padding: 18px 0; min-height: 56px; font-size: 16px; font-weight: 560; color: var(--foreground-muted); white-space: nowrap; cursor: pointer; }
 .viewTabs > button:hover, .viewTabs > .activeTab { color: var(--accent); }
@@ -219,6 +222,8 @@
   .searchWrap > svg { width: 19px; height: 19px; }
   .shortcut { display: none; }
   .navigationRow { margin-top: 13px; }
+  .navigationActions { width: 100%; }
+  .managementLink { font-size: 14px; }
   .viewTabs { justify-content: space-between; gap: 10px; width: 100%; }
   .viewTabs > button { padding: 16px 0; font-size: 15px; min-height: 54px; }
   .libraryCount { display: none; }

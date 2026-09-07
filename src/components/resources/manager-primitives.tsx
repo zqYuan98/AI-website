@@ -35,6 +35,14 @@ export function ManagerResourceIcon({ name, icon }: { name: string; icon: string
     : name.slice(0, 1).toLocaleUpperCase()}</span>;
 }
 
+export function ManagerErrorNotice({ message, status = 0, onRefresh }: { message: string; status?: number; onRefresh?: () => void }) {
+  return <div className={styles.error} role="alert"><p>{message}</p><div className={styles.errorActions}>
+    {status === 401 || status === 403 ? <a className={styles.secondaryButton} href="/login" target="_blank" rel="noopener noreferrer">在新标签页重新登录</a> : null}
+    {status === 409 ? <a className={styles.secondaryButton} href="/tools/manage" target="_blank" rel="noopener noreferrer">查看最新资源</a> : null}
+    {onRefresh ? <button type="button" className={styles.secondaryButton} onClick={onRefresh}>刷新列表</button> : null}
+  </div></div>;
+}
+
 export function ManagerDialog({ title, description, children, onClose, busy = false, wide = false }: {
   title: string; description?: string; children: ReactNode; onClose: () => void; busy?: boolean; wide?: boolean;
 }) {

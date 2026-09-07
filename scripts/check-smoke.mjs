@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
 
-const args = process.argv.slice(2);
+const cloud = process.argv.includes('--cloud');
+const args = process.argv.slice(2).filter(arg => arg !== '--cloud');
 if (args.length > 1 || args[0]?.startsWith('--')) {
-  throw new Error('Usage: node scripts/check-smoke.mjs [http(s)://host:port]');
+  throw new Error('Usage: node scripts/check-smoke.mjs [http(s)://host:port] [--cloud]');
 }
 const base = new URL(args[0] ?? process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000');
 assert(['http:', 'https:'].includes(base.protocol), 'Smoke URL must use HTTP or HTTPS');
@@ -54,7 +55,20 @@ async function check(route, expectedStatus) {
 for (let offset = 0; offset < publicRoutes.length; offset += 4) {
   await Promise.all(publicRoutes.slice(offset, offset + 4).map((route) => check(route, 200)));
 }
-await check('/tools/manage', 404);
+await check('/login', 200);
+if (cloud) {
+  const response = await fetch(new URL('/tools/manage', base), { redirect: 'manual', signal: AbortSignal.timeout(15_000) });
+  assert([303, 307, 308].includes(response.status), 'Anonymous cloud manager must redirect to login');
+  assert.equal(new URL(response.headers.get('location'), base).pathname, '/login');
+  await response.body?.cancel();
+} else await check('/tools/manage', 404);
+const cloudAnonymous = await fetch(new URL('/api/library', base), {
+  method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base.origin },
+  body: JSON.stringify({ action: 'list' }), signal: AbortSignal.timeout(15_000),
+});
+assert.equal(cloudAnonymous.status, cloud ? 401 : 404, 'Cloud library must reject anonymous reads');
+assert.match(cloudAnonymous.headers.get('cache-control'), /no-store/);
+await cloudAnonymous.body?.cancel();
 await check('/api/local-tools', 404);
 await check('/api/local-library', 404);
 for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']) {

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { PublicResourceExplorer } from "@/components/resources/public-resource-explorer";
 import styles from "@/components/resources/public-library.module.css";
-import { getPublicResources } from "@/lib/public-resources";
+import { getSitePublicResources } from "@/lib/site-resources";
 import { site } from "@/lib/site";
 
 const title = "资源库";
@@ -16,8 +15,10 @@ export const metadata: Metadata = {
   twitter: { card: "summary", title: `${title} · ${site.name}`, description },
 };
 
-export default function ToolsPage() {
-  const resources = getPublicResources();
+export const revalidate = 60;
+
+export default async function ToolsPage() {
+  const resources = await getSitePublicResources();
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -44,7 +45,7 @@ export default function ToolsPage() {
           <span className={styles.authorSignature}>Curated by <strong>Vitamin</strong><span aria-hidden="true">↗</span></span>
         </header>
         <PublicResourceExplorer resources={resources} />
-        <footer className={styles.pageFooter}><p>外部内容会持续变化，选择适合当下问题的资源。</p>{process.env.NODE_ENV === "development" ? <Link href="/tools/manage">我的收藏 <span>本机管理 ↗</span></Link> : null}</footer>
+        <footer className={styles.pageFooter}><p>外部内容会持续变化，选择适合当下问题的资源。</p></footer>
         <noscript><section className={styles.noScript}><h2>全部公开资源</h2><p>启用 JavaScript 可使用搜索与用途筛选，也可以直接浏览以下链接。</p><ul>{resources.map((resource) => <li key={resource.id}><a href={resource.url} target="_blank" rel="noopener noreferrer">{resource.name}</a>：{resource.description}</li>)}</ul></section></noscript>
       </div>
     </div>

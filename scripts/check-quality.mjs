@@ -33,6 +33,9 @@ if (options[0] !== '--typecheck') {
   run('tools and local maintenance guards', 'scripts/check-tools.mjs');
   run('tool URL state and search', 'scripts/check-tools-state.mjs');
   run('private library and publication boundary', 'scripts/check-library.mjs');
+  run('owner authentication and recovery', 'scripts/cloud-auth-check.mjs');
+  run('cloud library transactions and database privileges', 'scripts/cloud-library-check.mjs');
+  run('cloud API access and public cache boundary', 'scripts/check-cloud-api.mjs');
   run('public resource navigation and search', 'scripts/check-resource-state.mjs');
   run('orbit interaction and media lifecycle', 'scripts/check-orbit-motion.mjs');
   run('lint', cli('eslint', 'eslint'), ['.', '--max-warnings=0']);

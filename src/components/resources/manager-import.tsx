@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
-import type { ImportCandidate, LibraryResource } from "@/lib/resource-types";
-import { managerError, managerRequest } from "./manager-api";
-import { ManagerDialog, ManagerIcon } from "./manager-primitives";
+import type { ImportCandidate } from "@/lib/resource-types";
+import { managerError, managerErrorStatus, managerRequest, type ManagerLibraryResult, type ManagerRequestContext } from "./manager-api";
+import { ManagerDialog, ManagerErrorNotice, ManagerIcon } from "./manager-primitives";
 import styles from "./manager-workspace.module.css";
 
 type ImportPreview = { items: ImportCandidate[]; duplicates: unknown[] | number; invalid: unknown[] | number; invalidItems?: { name: string; url: string; reason: string }[] };
@@ -12,7 +12,8 @@ function urlsToHtml(value: string): string {
   return `<!DOCTYPE NETSCAPE-Bookmark-file-1><DL>${value.split(/\r?\n/).map(url => url.trim()).filter(Boolean).map(url => `<DT><A HREF="${escape(url)}">${escape(url)}</A>`).join("\n")}</DL>`;
 }
 
-export function ManagerImport({ onClose, onImported }: { onClose: () => void; onImported: (resources: LibraryResource[], message: string, batchId?: string) => void }) {
+export function ManagerImport({ context, onClose, onImported }: { context: ManagerRequestContext; onClose: () => void; onImported: (result: ManagerLibraryResult, message: string) => void }) {
+  const [requestContext] = useState(() => ({ ...context }));
   const [mode, setMode] = useState<"html" | "urls">("html");
   const [html, setHtml] = useState("");
   const [fileName, setFileName] = useState("");
@@ -21,6 +22,7 @@ export function ManagerImport({ onClose, onImported }: { onClose: () => void; on
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState(0);
 
   async function readFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
@@ -36,9 +38,9 @@ export function ManagerImport({ onClose, onImported }: { onClose: () => void; on
   async function parse() {
     setBusy(true); setError("");
     try {
-      const result = await managerRequest<ImportPreview>({ action: "import-preview", html: mode === "html" ? html : urlsToHtml(urls) });
+      const result = await managerRequest<ImportPreview>({ action: "import-preview", html: mode === "html" ? html : urlsToHtml(urls) }, requestContext);
       setPreview(result); setSelected(new Set(result.items.map((_, index) => index)));
-    } catch (failure) { setError(managerError(failure)); }
+    } catch (failure) { setError(managerError(failure)); setErrorStatus(managerErrorStatus(failure)); }
     finally { setBusy(false); }
   }
 
@@ -46,10 +48,10 @@ export function ManagerImport({ onClose, onImported }: { onClose: () => void; on
     if (!preview || !selected.size || busy) return;
     setBusy(true); setError("");
     try {
-      const result = await managerRequest<{ resources: LibraryResource[]; added: number; skipped: number; batchId?: string }>({ action: "import", items: preview.items.filter((_, index) => selected.has(index)) });
-      onImported(result.resources, `已导入 ${result.added} 条私有收藏${result.skipped ? `，跳过 ${result.skipped} 条重复项` : ""}。可在导入记录中撤回本批新增。`, result.batchId);
+      const result = await managerRequest<ManagerLibraryResult & { added: number; skipped: number; batchId?: string }>({ action: "import", items: preview.items.filter((_, index) => selected.has(index)) }, requestContext);
+      onImported(result, `已导入 ${result.added} 条私有收藏${result.skipped ? `，跳过 ${result.skipped} 条重复项` : ""}。可在导入记录中撤回本批新增。`);
       onClose();
-    } catch (failure) { setError(managerError(failure)); }
+    } catch (failure) { setError(managerError(failure)); setErrorStatus(managerErrorStatus(failure)); }
     finally { setBusy(false); }
   }
 
@@ -63,7 +65,7 @@ export function ManagerImport({ onClose, onImported }: { onClose: () => void; on
         {preview.items.length ? <><label className={styles.checkLabel}><input type="checkbox" checked={selected.size === preview.items.length} onChange={event => setSelected(event.target.checked ? new Set(preview.items.map((_, index) => index)) : new Set())} />选择全部可导入资源</label><ul className={styles.previewList}>{preview.items.map((item, index) => <li key={`${item.url}-${index}`}><label className={styles.importCandidate}><input type="checkbox" checked={selected.has(index)} onChange={() => setSelected(previous => { const next = new Set(previous); if (next.has(index)) next.delete(index); else next.add(index); return next; })} /><span><strong>{item.name}</strong><small>{item.url}</small>{item.sourceFolder ? <small>原文件夹：{item.sourceFolder}</small> : null}</span></label></li>)}</ul></> : <p className={styles.help}>没有新的可导入资源。可以更换文件或修改网址后重试。</p>}
         {count(preview.invalid) ? <details className={styles.formDetails}><summary>查看无法处理的条目</summary><ul className={styles.issueList}>{preview.invalidItems?.length ? preview.invalidItems.map((item, index) => <li key={index}><strong>{item.name || "未命名书签"}</strong> · {item.reason}<br />{item.url}</li>) : <li>有 {count(preview.invalid)} 条网址未通过校验，请检查原文件后重试。</li>}</ul>{count(preview.invalid) > (preview.invalidItems?.length ?? 0) && preview.invalidItems?.length ? <p className={styles.help}>仅展示前 {preview.invalidItems.length} 条错误。修复原文件后可以重新解析。</p> : null}</details> : null}
       </section> : null}
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+      {error ? <ManagerErrorNotice message={error} status={errorStatus} /> : null}
     </div>
     <footer className={styles.dialogActions}><button type="button" className={styles.secondaryButton} disabled={busy} onClick={onClose}>取消</button><button type="button" className={styles.primaryButton} disabled={busy || !preview || !selected.size} onClick={confirmImport}>{busy ? "正在处理…" : `确认导入${selected.size ? ` ${selected.size} 条` : ""}`}</button></footer>
   </ManagerDialog>;
