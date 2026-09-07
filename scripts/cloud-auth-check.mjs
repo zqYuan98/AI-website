@@ -42,7 +42,15 @@ try {
   assert.deepEqual(new Set(migration.toBeCreated.map(item => item.table)), new Set(AUTH_TABLES));
   await migration.runMigrations();
   assert.equal((await getMigrations(auth.options)).toBeCreated.length, 0, 'Migration is repeatable');
-  await createOwnerAccount(auth, ownerId, 'owner@example.test', password);
+  for (const email of ['a..b@example.test', '.a@example.test', 'owner@localhost', 'owner @example.test', ' \t\r\n', null, `${'a'.repeat(244)}@example.test`]) {
+    await assert.rejects(createOwnerAccount(auth, ownerId, email, password), /邮箱格式不正确/);
+    for (const model of ['user', 'account', 'session']) {
+      assert.equal((await context.adapter.findMany({ model })).length, 0, `Rejected bootstrap email must not write ${model} rows`);
+    }
+  }
+  await createOwnerAccount(auth, ownerId, ' \tOwner@Example.Test\r\n ', password);
+  const createdOwner = await context.adapter.findOne({ model: 'user', where: [{ field: 'id', value: ownerId }] });
+  assert.equal(createdOwner?.email, 'owner@example.test', 'Outer whitespace and casing are normalized before validation and storage');
   await assert.rejects(createOwnerAccount(auth, ownerId, 'second@example.test', password), /已有账号/);
 
   const anonymous = await status(await route.GET(request('get-session', 'GET')), 200);
@@ -96,7 +104,7 @@ try {
   assert(!cloudAuthConfigured());
   const unavailable = await status(await route.POST(request('sign-in/email')), 503);
   assert(!JSON.stringify(await unavailable.json()).includes('postgres'));
-  console.log('[cloud-auth] Real PostgreSQL migrations, owner login, signup denial, CSRF, session expiry/logout/recovery, non-owner denial and persisted rate limits passed.');
+  console.log('[cloud-auth] Real PostgreSQL migrations, bootstrap email validation/normalization with no partial accounts, owner login, signup denial, CSRF, session expiry/logout/recovery, non-owner denial and persisted rate limits passed.');
 } finally {
   for (const key of Object.keys(process.env)) if (!(key in original)) delete process.env[key];
   Object.assign(process.env, original);

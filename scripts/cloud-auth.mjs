@@ -2,9 +2,11 @@
 import fs from 'node:fs';
 import readline from 'node:readline';
 import { Writable } from 'node:stream';
+import { Pool } from 'pg';
 import { getMigrations } from 'better-auth/db/migration';
 import { createTsLoader } from './lib/load-ts.mjs';
 import { createOwnerAccount, resetOwnerPassword } from './cloud-auth-operations.mjs';
+import { selectAdminDatabaseUrl } from './lib/database-admin-url.mjs';
 
 const command = process.argv[2];
 if (process.argv.length !== 3 || !['migrate', 'create-owner', 'reset-password'].includes(command)) {
@@ -30,11 +32,10 @@ try {
   if (fs.existsSync('.env.local')) process.loadEnvFile('.env.local');
   const load = createTsLoader();
   const { getCloudAuthConfig } = load('src/lib/server/config.ts');
-  const { getDatabasePool } = load('src/lib/server/database.ts');
-  const { getAuth, AUTH_TABLES } = load('src/lib/server/auth.ts');
+  const { createOwnerAuth, AUTH_TABLES } = load('src/lib/server/auth.ts');
   const config = getCloudAuthConfig();
-  pool = getDatabasePool();
-  const auth = getAuth();
+  pool = new Pool({ connectionString: selectAdminDatabaseUrl(), max: 1, connectionTimeoutMillis: 10000 });
+  const auth = createOwnerAuth(pool, config);
   if (command === 'migrate') {
     const plan = await getMigrations(auth.options);
     if (plan.schemaProblems.length || plan.unsafeChanges.length) throw new Error('认证表结构需要人工检查，迁移未执行。');

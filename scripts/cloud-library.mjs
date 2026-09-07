@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { Pool } from "pg";
 import { createTsLoader } from "./lib/load-ts.mjs";
+import { selectAdminDatabaseUrl } from "./lib/database-admin-url.mjs";
 
 const root = process.cwd();
 const load = createTsLoader(root);
@@ -58,7 +59,7 @@ async function main() {
   }
   const owner = process.env.LIBRARY_OWNER_ID?.trim();
   if (!process.env.DATABASE_URL || !owner) throw new Error("Set DATABASE_URL and LIBRARY_OWNER_ID in the private environment first.");
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1, connectionTimeoutMillis: 10000 });
+  const pool = new Pool({ connectionString: selectAdminDatabaseUrl(), max: 1, connectionTimeoutMillis: 10000 });
   const store = createCloudLibraryStore(pool, () => owner);
   try {
     let result;

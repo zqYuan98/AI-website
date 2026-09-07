@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -8,6 +9,7 @@ import { Pool } from "pg";
 import { createTsLoader } from "./lib/load-ts.mjs";
 import { createPglitePool } from "./lib/pglite-pool.mjs";
 import { provisionPublicRole } from "./cloud-library-roles.mjs";
+import { selectAdminDatabaseUrl } from "./lib/database-admin-url.mjs";
 
 const load = createTsLoader();
 const { createCloudLibraryStore } = load("src/lib/cloud-library.ts");
@@ -32,6 +34,14 @@ try {
   assert.equal(preexisting.rows.length, 0, "Use an empty, disposable test database; existing library schemas will not be modified.");
   const reservedRole = await pool.query("SELECT 1 FROM pg_roles WHERE rolname = 'vitamin_library_public'");
   assert.equal(reservedRole.rows.length, 0, "The test must not rotate an existing public role's credentials. Use an isolated disposable PostgreSQL instance.");
+  if (db) {
+    assert.equal((await pool.query("SELECT rolsuper FROM pg_roles WHERE rolname = current_user")).rows[0].rolsuper, true, "PGlite uses its bootstrap superuser only to establish non-superuser test sessions.");
+    assert.equal((await pool.query("SELECT 1 FROM pg_roles WHERE rolname = 'vitamin_library_setup_test_admin'")).rows.length, 0, "Use an isolated fixture without an existing test administrator.");
+  } else {
+    const administrator = (await pool.query("SELECT rolsuper, rolcreaterole FROM pg_roles WHERE rolname = current_user")).rows[0];
+    assert.equal(administrator.rolsuper, false, "Use the actual non-superuser Neon administrator for remote compatibility checks.");
+    assert.equal(administrator.rolcreaterole, true, "The isolated integration administrator needs CREATEROLE.");
+  }
   if (db) await db.exec(migration); else await pool.query(migration);
   await assert.rejects(() => readPublishedSnapshot(pool), status(503));
   await assert.rejects(() => store.handle({ action: "list" }, owner), status(503));
@@ -171,29 +181,125 @@ try {
   publicDatabaseConnection("postgres://vitamin_library_public:fixture@ep-test-pooler.us.neon.tech/app", "postgresql://owner:fixture@ep-test.us.neon.tech:5432/app");
   for (const bad of ["postgres://owner:fixture@ep-test.us.neon.tech/app", "postgres://public:fixture@ep-other.us.neon.tech/app", "postgres://public:fixture@ep-test.us.neon.tech/other", "postgres://public:fixture@ep-test.us.neon.tech:5555/app"]) assert.throws(() => publicDatabaseConnection(bad, "postgres://owner:fixture@ep-test.us.neon.tech/app"));
   assert.throws(() => publicDatabaseConnection("postgres://public:fixture@localhost", "postgres://owner:fixture@localhost"), "Implicit database names differ between roles and must be rejected.");
+  const runtimeConnection = "postgres://owner:fixture@ep-test-pooler.us.neon.tech/app";
+  const directConnection = "postgres://owner:fixture@ep-test.us.neon.tech:5432/app";
+  assert.equal(selectAdminDatabaseUrl({ DATABASE_URL: runtimeConnection }), runtimeConnection);
+  assert.equal(selectAdminDatabaseUrl({ DATABASE_URL: runtimeConnection, DATABASE_ADMIN_URL: directConnection }), directConnection);
+  for (const bad of ["postgres://owner:fixture@ep-other.us.neon.tech/app", "postgres://owner:fixture@ep-test.us.neon.tech/other", "postgres://owner:fixture@ep-test.us.neon.tech:5555/app", "postgres://other-owner:fixture@ep-test.us.neon.tech/app", runtimeConnection]) {
+    assert.throws(() => selectAdminDatabaseUrl({ DATABASE_URL: runtimeConnection, DATABASE_ADMIN_URL: bad }));
+  }
+  assert.throws(() => selectAdminDatabaseUrl({ DATABASE_ADMIN_URL: directConnection }));
 
   await pool.query("CREATE TABLE public.library_auth_user (id text PRIMARY KEY, password_hash text NOT NULL)");
   await pool.query("REVOKE ALL ON public.library_auth_user FROM PUBLIC");
   await pool.query("INSERT INTO public.library_auth_user VALUES ('owner', 'AUTH-SECRET-SENTINEL')");
-  await provisionPublicRole(pool, "postgres://vitamin_library_public:test-fixture-only@localhost/app", "postgres://owner:test-fixture-only@localhost/app");
-  const client = await pool.connect();
+  const fixtureDatabase = (await pool.query("SELECT current_database() AS name")).rows[0].name;
+  const bootstrapRole = (await pool.query("SELECT session_user AS name")).rows[0].name;
+  const quoteIdentifier = value => `"${value.replaceAll('"', '""')}"`;
+  const setupRole = db ? "vitamin_library_setup_test_admin" : bootstrapRole;
+  if (db) {
+    await pool.query(`CREATE ROLE ${setupRole} LOGIN CREATEROLE NOINHERIT PASSWORD 'admin-fixture-only'`);
+    await pool.query(`ALTER DATABASE ${quoteIdentifier(fixtureDatabase)} OWNER TO ${setupRole}`);
+    await pool.query(`ALTER SCHEMA library_private OWNER TO ${setupRole}`);
+    await pool.query(`ALTER SCHEMA library_public OWNER TO ${setupRole}`);
+    await pool.query(`ALTER TABLE library_private.state OWNER TO ${setupRole}`);
+    await pool.query(`ALTER TABLE library_public.snapshot OWNER TO ${setupRole}`);
+    await pool.query(`ALTER TABLE public.library_auth_user OWNER TO ${setupRole}`);
+  }
+
+  async function superQuery(sql, values = []) {
+    const client = await pool.connect();
+    try {
+      if (db) await client.query(`SET SESSION AUTHORIZATION ${quoteIdentifier(bootstrapRole)}`);
+      return await client.query(sql, values);
+    }
+    finally { client.release(); }
+  }
+  function sessionPool(role) {
+    return {
+      async connect() {
+        const client = await pool.connect();
+        await client.query(`SET SESSION AUTHORIZATION ${quoteIdentifier(bootstrapRole)}`);
+        await client.query(`SET SESSION AUTHORIZATION ${quoteIdentifier(role)}`);
+        return client;
+      },
+      async query(sql, values = []) {
+        const client = await this.connect();
+        try { return await client.query(sql, values); } finally { client.release(); }
+      },
+      async end() { await superQuery("SELECT 1"); },
+    };
+  }
+  const adminUrl = new URL(dbURL || `postgres://postgres:fixture@localhost/${fixtureDatabase}`);
+  if (db) { adminUrl.username = setupRole; adminUrl.password = "admin-fixture-only"; }
+  const publicUrl = new URL(adminUrl);
+  publicUrl.username = "vitamin_library_public";
+  publicUrl.password = randomBytes(24).toString("base64url");
+  const adminPool = db ? sessionPool(setupRole) : new Pool({ connectionString: adminUrl.toString(), max: 1 });
+  const newPublicPool = () => db ? sessionPool("vitamin_library_public") : new Pool({ connectionString: publicUrl.toString(), max: 1 });
+  let independentConnections = 0;
+  const provision = (options = {}) => provisionPublicRole(adminPool, publicUrl.toString(), adminUrl.toString(), {
+    connectPublic: () => { independentConnections++; return newPublicPool(); }, ...options,
+  });
+  const ordinary = (await adminPool.query("SELECT current_user AS name, rolsuper, rolcreatedb, rolreplication, rolbypassrls, rolcreaterole FROM pg_roles WHERE rolname = current_user")).rows[0];
+  if (db) assert.deepEqual(ordinary, { name: setupRole, rolsuper: false, rolcreatedb: false, rolreplication: false, rolbypassrls: false, rolcreaterole: true });
+  else { assert.equal(ordinary.rolsuper, false); assert.equal(ordinary.rolcreaterole, true); }
+  await provision();
+  assert.equal(independentConnections, 1, "Public access must be verified through a separate login after commit.");
+  const membership = (await adminPool.query("SELECT admin_option, inherit_option, set_option FROM pg_auth_members WHERE roleid = 'vitamin_library_public'::regrole AND member = current_user::regrole")).rows[0];
+  assert.deepEqual(membership, { admin_option: true, inherit_option: false, set_option: false });
+  await assert.rejects(() => adminPool.query("SET ROLE vitamin_library_public"), error => error.code === "42501", "The non-superuser creator really cannot SET ROLE.");
+  await assert.rejects(() => adminPool.query("ALTER ROLE vitamin_library_public NOSUPERUSER"), error => error.code === "42501", "Old repeated provisioning SQL must fail under the actual test identity.");
+  await provision();
+  assert.equal(independentConnections, 2, "Safe repeated provisioning must work without elevated ALTER options.");
+
+  const publicPool = newPublicPool();
   try {
-    await client.query("SET ROLE vitamin_library_public");
-    await assertPublicLibraryRole(client);
-    assert.equal((await readPublishedSnapshot(client)).resources.length, 0);
-    await assert.rejects(() => client.query("SELECT state FROM library_private.state"));
-    await assert.rejects(() => client.query("SELECT password_hash FROM public.library_auth_user"));
-    await assert.rejects(() => client.query("DELETE FROM library_public.snapshot"));
-    await assert.rejects(() => client.query("CREATE TABLE public.public_role_must_not_write (id int)"));
-    await client.query("RESET ROLE");
-  } finally { client.release(); }
-  await pool.query("GRANT SELECT ON public.library_auth_user TO vitamin_library_public");
-  const tainted = await pool.connect();
+    await assertPublicLibraryRole(publicPool);
+    assert.equal((await readPublishedSnapshot(publicPool)).resources.length, 0);
+    await publicPool.query("SET default_transaction_read_only = off");
+    await assert.rejects(() => publicPool.query("SELECT state FROM library_private.state"), error => error.code === "42501");
+    await assert.rejects(() => publicPool.query("SELECT password_hash FROM public.library_auth_user"), error => error.code === "42501");
+    await assert.rejects(() => publicPool.query("DELETE FROM library_public.snapshot"), error => error.code === "42501");
+    await assert.rejects(() => publicPool.query("CREATE TABLE public.public_role_must_not_write (id int)"), error => error.code === "42501");
+  } finally { await publicPool.end(); }
+
+  const originalMarker = (await superQuery("SELECT shobj_description('vitamin_library_public'::regrole::oid, 'pg_authid') AS marker")).rows[0].marker;
+  assert.match(originalMarker, /^vitamin-library-public:v2:/);
+  await superQuery("COMMENT ON ROLE vitamin_library_public IS 'vitamin-library-public:v2:another-database:1'");
+  await assert.rejects(() => provision(), /different-database marker/);
+  await superQuery("COMMENT ON ROLE vitamin_library_public IS 'vitamin-library-public:v1'");
+  await assert.rejects(() => provision(), /different-database marker/, "A cluster-global legacy marker cannot establish database ownership.");
+  await superQuery(`COMMENT ON ROLE vitamin_library_public IS '${originalMarker.replaceAll("'", "''")}'`);
+  if (db) {
+    for (const attribute of ["SUPERUSER", "CREATEDB", "CREATEROLE", "REPLICATION", "BYPASSRLS"]) {
+      await superQuery(`ALTER ROLE vitamin_library_public ${attribute}`);
+      await assert.rejects(() => provision(), /elevated privileges/);
+      await superQuery(`ALTER ROLE vitamin_library_public NO${attribute}`);
+    }
+  }
+  await superQuery("CREATE ROLE unexpected_library_membership");
+  await superQuery("GRANT unexpected_library_membership TO vitamin_library_public");
+  await assert.rejects(() => provision(), /unexpected memberships/);
+  await superQuery("REVOKE unexpected_library_membership FROM vitamin_library_public");
+  await superQuery("GRANT vitamin_library_public TO unexpected_library_membership");
+  await assert.rejects(() => provision(), /unexpected memberships/);
+  await superQuery("REVOKE vitamin_library_public FROM unexpected_library_membership");
+
+  await superQuery("GRANT SELECT ON public.library_auth_user TO vitamin_library_public");
+  await assert.rejects(() => provision(), /unexpected object grants/, "Overprivileged existing roles must be rejected before commit.");
+  const tainted = newPublicPool();
   try {
-    await tainted.query("SET ROLE vitamin_library_public");
     await assert.rejects(() => assertPublicLibraryRole(tainted), status(503));
-    await tainted.query("RESET ROLE");
-  } finally { tainted.release(); }
+  } finally { await tainted.end(); }
+  await superQuery("REVOKE SELECT ON public.library_auth_user FROM vitamin_library_public");
+  await superQuery("GRANT CREATE ON SCHEMA public TO vitamin_library_public");
+  await assert.rejects(() => provision(), /unexpected object grants/);
+  await superQuery("REVOKE CREATE ON SCHEMA public FROM vitamin_library_public");
+  await assert.rejects(() => provision({ connectPublic: () => { throw new Error("Simulated independent login failure"); } }), error => error.name === "PublicRoleVerificationError");
+  assert.equal((await superQuery("SELECT has_table_privilege('vitamin_library_public', 'library_public.snapshot', 'SELECT') AS read, has_table_privilege('vitamin_library_public', 'public.library_auth_user', 'SELECT') AS private")).rows[0].private, false, "Failed verification must not grant extra permissions.");
+  await provision();
+  await adminPool.end();
 
   console.log(`PASS: ${dbURL ? "isolated PostgreSQL" : "PGlite PostgreSQL"} migrations, 274-resource baseline, fixed owner, required/stale revisions, competing writes, private defaults, import/undo, publication allowlist, rollback, restore isolation, explicit empty snapshot and restricted public/auth SQL privileges.`);
 } finally {

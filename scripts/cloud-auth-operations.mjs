@@ -1,14 +1,21 @@
 /** Explicit account operations for the offline owner CLI and isolated tests only. */
+import { signUpEmail } from 'better-auth/api';
+
+// Reuse Better Auth's public endpoint schema without invoking its registration handler.
+const ownerAccountSchema = signUpEmail().options.body;
+
 export async function createOwnerAccount(auth, ownerId, email, password) {
-  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new Error('邮箱格式不正确。');
   validatePassword(password);
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const input = ownerAccountSchema.safeParse({ name: 'Vitamin', email: normalizedEmail, password });
+  if (normalizedEmail.length > 254 || !input.success) throw new Error('邮箱格式不正确。');
   const context = await auth.$context;
   const hash = await context.password.hash(password);
   await context.adapter.transaction(async transaction => {
     const existing = await transaction.findMany({ model: 'user', limit: 1 });
     if (existing.length) throw new Error('认证库已有账号，不能重复初始化；如需恢复请使用 reset-password。');
     const now = new Date();
-    await transaction.create({ model: 'user', forceAllowId: true, data: { id: ownerId, email: email.toLowerCase().trim(), name: 'Vitamin', emailVerified: true, createdAt: now, updatedAt: now } });
+    await transaction.create({ model: 'user', forceAllowId: true, data: { id: ownerId, email: input.data.email, name: 'Vitamin', emailVerified: true, createdAt: now, updatedAt: now } });
     await transaction.create({ model: 'account', data: { userId: ownerId, accountId: ownerId, providerId: 'credential', password: hash, createdAt: now, updatedAt: now } });
   });
 }
