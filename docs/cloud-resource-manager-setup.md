@@ -27,6 +27,7 @@
 | `BETTER_AUTH_SECRET` | 随机生成至少 32 字符的会话密钥；放入安全配置，不输出到聊天或仓库 |
 | `BETTER_AUTH_URL` | 正式固定为 `https://www.notvitamin.com`；本机测试使用对应的 loopback 地址 |
 | `LIBRARY_OWNER_ID` | 预先生成并固定的随机用户 ID；账号创建前配置，不从访问者注册时推断 |
+| `LIBRARY_API_ENCRYPTION_KEY` | 智能筛选专用的独立随机 32 字节密钥，以 base64 编码；用于加密数据库内的模型 API Key，不能复用登录密钥 |
 
 所有变量均为服务端变量，不能加 `NEXT_PUBLIC_` 前缀。正式密钥在 Vercel 标为 Sensitive，并只选择 Production。环境变量变化后需要新部署才能生效。[Vercel 配置说明](https://vercel.com/docs/environment-variables)
 
@@ -135,3 +136,17 @@ node scripts/cloud-auth.mjs reset-password
 - 免费额度、数据库恢复保留时间与服务可用性受当前套餐约束。本机下载备份不等于云端自动备份；定期备份频率由实际更新频率决定。
 
 上线验收需要验证：匿名与其他账号不能访问私有内容；正确账号能登录和退出；新增默认私有；私人备注不进入页面数据；普通保存不发布；过期预览拒绝提交；发布和撤下在首页及资源页一致；空公开版本有效；密码恢复后旧会话失效。
+
+## 智能导入与自定义 API
+
+线上管理的「导入记录」位于 `/tools/manage/imports`。HTML 或逐行网址先成为私有批次，去重、来源和筛选决定保存在数据库；每页 50 条，未处理的条目可以下次继续。单个文件仍限制 2 MiB、5000 个原始链接。批量确认分组以不超过 100 组的小事务入库，再次提交会核对原有回执，避免重复新增。
+
+「智能筛选」设置位于 `/tools/manage/settings`。先填写连接名称、Base URL、模型 ID 和 API Key，保存后用虚构样例测试，通过后再启用。第一版支持 OpenAI 兼容的 Chat Completions 协议；Base URL 后追加 `/chat/completions`，页面显示实际调用地址。不要求服务商支持模型列表接口。保存设置不会发送书签；实际分析前还需要确认标题和公开域名，允许排除条目。不会发送私人备注、原文件夹、完整网址或查询参数，也不会抓取网页。
+
+模型 Key 只通过本站管理表单提交一次，服务端用独立的 `LIBRARY_API_ENCRYPTION_KEY` 加密保存在 `library_private.smart_api_settings`。读取设置只返回是否已配置，不回显 Key 或密文。换地址会清除旧凭据并要求重新测试；停用、清除 Key 或修改配置会暂停尚未发送的分析。独立加密密钥首次配置到 Production 后需要重新部署；后续更换模型或 API Key 只需在管理页面保存。保管好该主密钥，丢失后需要重新填写已保存的模型 Key。
+
+分析采用 Workflow SDK 的持久任务，数据库保存批次、候选结果和请求账本；Workflow 只接收不含内容的任务 ID。每次最多选择 500 个候选组，再按配置分组调用。限制单组输入 64 KiB、响应 256 KiB、输出 tokens、请求数和全局并发。填写输入／输出单价后可设置估算预算；未知价格显示未知。超时、连接中断或崩溃导致结果不明时，保留请求预留和可能已计费提示，要求手动决定是否重试，不自动切换服务商。
+
+`node scripts/cloud-library.mjs migrate` 按顺序应用 `library-001.sql` 至 `library-004-analysis.sql`，只新增私有表及权限保护，不创建模型配置、不导入或发布资源。现有公开只读角色无法访问这些表。资源 JSON 备份仍只包含资源库，不包含导入工作区、分析任务、模型设置或密钥；这些私有表需要数据库级备份。批次清理会一并清理相关分析任务。
+
+无需模型或真实云端数据库的回归检查已加入 `node scripts/check-quality.mjs --build`。本地页面验收可使用 `node scripts/smart-ui-fixture.mjs`：它创建仅监听 loopback 的全新内存数据库，在 4320 端口运行开发站点并填入虚构书签，退出后数据消失。固定夹具账号仅供本地测试：`smart-fixture-owner@example.test` / `SmartImport-Fixture-2026!`。该命令不读取正式连接来初始化数据，也不调用外部模型；运行前需停止占用同一仓库 Next 开发锁的服务。

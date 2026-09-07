@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RESOURCE_CATEGORIES, RESOURCE_KINDS, RESOURCE_KIND_LABELS, type LibraryResource, type LibraryState, type ResourceCategory, type ResourceKind } from "@/lib/resource-types";
 import { displayDate, managerError, managerErrorStatus, managerRequest, type ManagerLibraryResult, type ManagerMode, type ManagerRequestContext } from "./manager-api";
 import { ManagerDialog, ManagerErrorNotice, ManagerIcon, ManagerResourceIcon, type ManagerIconName } from "./manager-primitives";
@@ -9,6 +10,7 @@ import { ManagerEditor } from "./manager-editor";
 import { ManagerImport } from "./manager-import";
 import { ManagerPublish } from "./manager-publish";
 import styles from "./manager-workspace.module.css";
+import smartStyles from "./smart-import.module.css";
 
 type View = "all" | "pinned" | "inbox" | "featured" | "archived";
 type Dialog = "add" | "edit" | "import" | "publish" | "history" | "filters" | null;
@@ -19,8 +21,17 @@ const VIEWS: { id: View; label: string; icon: ManagerIconName }[] = [
   { id: "featured", label: "维他命精选", icon: "award" },
 ];
 
+function subscribeLocation(callback: () => void) { window.addEventListener("popstate", callback); window.addEventListener("library-location-change", callback); return () => { window.removeEventListener("popstate", callback); window.removeEventListener("library-location-change", callback); }; }
+function locationSnapshot() { return window.location.search; }
+function serverLocationSnapshot() { return ""; }
+function ManagerLocationObserver() { const params = useSearchParams(); useEffect(() => { window.dispatchEvent(new Event("library-location-change")); }, [params]); return null; }
+
 export function ResourceManager({ mode = "local", email }: { mode?: ManagerMode; email?: string }) {
   const router = useRouter();
+  const locationSearch = useSyncExternalStore(subscribeLocation, locationSnapshot, serverLocationSnapshot);
+  const locationParams = new URLSearchParams(locationSearch);
+  const batchFilterId = mode === "cloud" ? locationParams.get("batchId") || "" : "";
+  const resourceFilterId = mode === "cloud" ? locationParams.get("resourceId") || "" : "";
   const [resources, setResources] = useState<LibraryResource[]>([]);
   const [libraryRevision, setLibraryRevision] = useState("");
   const [publishedIds, setPublishedIds] = useState<string[]>([]);
@@ -72,7 +83,8 @@ export function ResourceManager({ mode = "local", email }: { mode?: ManagerMode;
   const filtered = useMemo(() => {
     const search = query.trim().toLocaleLowerCase();
     return resources.filter(item => {
-      if (view === "archived" ? item.status !== "archived" : item.status === "archived") return false;
+      if (batchFilterId && item.importBatchId !== batchFilterId || resourceFilterId && item.id !== resourceFilterId) return false;
+      if (!resourceFilterId && (view === "archived" ? item.status !== "archived" : item.status === "archived")) return false;
       if (view === "pinned" && !item.pinned || view === "inbox" && item.status !== "inbox" || view === "featured" && !item.featured) return false;
       if (category && item.category !== category || kind && item.kind !== kind) return false;
       return !search || [item.name, item.url, item.description, item.category, item.subcategory, ...item.tags, item.notes].join(" ").toLocaleLowerCase().includes(search);
@@ -82,7 +94,7 @@ export function ResourceManager({ mode = "local", email }: { mode?: ManagerMode;
       const difference = a.createdAt.localeCompare(b.createdAt);
       return (sort === "oldest" ? difference : -difference) || a.name.localeCompare(b.name, "zh-CN");
     });
-  }, [resources, view, category, kind, query, sort]);
+  }, [resources, view, category, kind, query, sort, batchFilterId, resourceFilterId]);
   const visible = filtered.slice(0, limit);
   const allVisibleSelected = visible.length > 0 && visible.every(item => selected.has(item.id));
   const batchGroups = Array.from(resources.reduce((groups, item) => {
@@ -103,7 +115,8 @@ export function ResourceManager({ mode = "local", email }: { mode?: ManagerMode;
   function refreshList() { setLoading(true); setError(""); setErrorStatus(0); setLoadVersion(value => value + 1); }
   function changeView(next: View) { setView(next); setCategory(""); setLimit(40); if (dialog === "filters") setDialog(null); }
   function changeCategory(next: ResourceCategory | "") { setCategory(next); setView("all"); setLimit(40); if (dialog === "filters") setDialog(null); }
-  function clearFilters() { setQuery(""); setCategory(""); setKind(""); setView("all"); setLimit(40); }
+  function clearBatchFilter() { const url = new URL(window.location.href); url.searchParams.delete("batchId"); url.searchParams.delete("resourceId"); window.history.replaceState(null, "", url); window.dispatchEvent(new Event("library-location-change")); setSelected(new Set()); }
+  function clearFilters() { setQuery(""); setCategory(""); setKind(""); setView("all"); setLimit(40); clearBatchFilter(); }
   function toggle(id: string) { setSelected(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
   function selectVisible() { setSelected(previous => { const next = new Set(previous); visible.forEach(item => { if (allVisibleSelected) next.delete(item.id); else next.add(item.id); }); return next; }); }
 
@@ -166,19 +179,19 @@ export function ResourceManager({ mode = "local", email }: { mode?: ManagerMode;
   const sidebarContent = <>
     <p className={styles.navLabel}>我的收藏</p><nav aria-label="收藏视图" className={styles.navGroup}>{VIEWS.map(item => <button key={item.id} type="button" aria-pressed={view === item.id && !category} onClick={() => changeView(item.id)}><ManagerIcon name={item.icon} /><span>{item.label}</span><small>{item.id === "all" ? activeResources.length : item.id === "pinned" ? pins.length : item.id === "inbox" ? activeResources.filter(resource => resource.status === "inbox").length : activeResources.filter(resource => resource.featured).length}</small></button>)}</nav>
     <div className={styles.navDivider} /><p className={styles.navLabel}>按用途</p><nav aria-label="用途分类" className={styles.navGroup}>{RESOURCE_CATEGORIES.map((item, index) => <button key={item} type="button" aria-pressed={category === item} onClick={() => changeCategory(item)}><span className={styles.categoryNumber} aria-hidden="true">0{index + 1}</span><span>{item}</span><small>{activeResources.filter(resource => resource.category === item).length}</small></button>)}</nav>
-    <div className={styles.navDivider} /><nav aria-label="维护工具" className={styles.navGroup}><button type="button" onClick={() => setDialog("history")}><ManagerIcon name="clock" /><span>导入记录</span></button><button type="button" aria-pressed={view === "archived"} onClick={() => changeView("archived")}><ManagerIcon name="archive" /><span>已归档</span><small>{resources.length - activeResources.length}</small></button><button type="button" disabled={Boolean(pending) || loading} onClick={backup}><ManagerIcon name="download" /><span>{pending === "backup" ? "正在下载…" : "下载完整备份"}</span></button></nav>
+    <div className={styles.navDivider} /><nav aria-label="维护工具" className={styles.navGroup}>{mode === "cloud" ? <><Link className={smartStyles.managerNavLink} href="/tools/manage/imports"><ManagerIcon name="clock" /><span>导入记录</span></Link><Link className={smartStyles.managerNavLink} href="/tools/manage/settings"><ManagerIcon name="grid" /><span>智能筛选</span></Link></> : <button type="button" onClick={() => setDialog("history")}><ManagerIcon name="clock" /><span>导入记录</span></button>}<button type="button" aria-pressed={view === "archived"} onClick={() => changeView("archived")}><ManagerIcon name="archive" /><span>已归档</span><small>{resources.length - activeResources.length}</small></button><button type="button" disabled={Boolean(pending) || loading} onClick={backup}><ManagerIcon name="download" /><span>{pending === "backup" ? "正在下载…" : "下载完整备份"}</span></button></nav>
     <p className={styles.sidebarNote}>{mode === "cloud" ? "收藏保存在私人云端。" : "收藏保存在本机。"}<br />保存不发布，分享由你决定。</p>
   </>;
 
-  return <section className={styles.workspace}>
+  return <section className={styles.workspace}><Suspense fallback={null}><ManagerLocationObserver /></Suspense>
     <div className={styles.workspaceTop}><span className={styles.workspaceLabel}><span className={styles.brandMark}>NV</span>我的资源库 <span className={styles.localBadge}>{mode === "cloud" ? "私人云端" : "本机管理"}</span></span><div className={styles.workspaceAccount}>{mode === "cloud" && email ? <span className={styles.accountEmail}>{email}</span> : null}<a className={styles.publicLink} href="/tools" target="_blank" rel="noreferrer">查看公开页 <ManagerIcon name="arrow" /></a>{mode === "cloud" ? <button type="button" className={styles.signOutButton} disabled={Boolean(pending)} onClick={signOut}>{pending === "signout" ? "正在退出…" : "退出"}</button> : null}</div></div>
     <div className={styles.workspaceGrid}><aside className={styles.sidebar}>{sidebarContent}</aside><div className={styles.main}>
-      <header className={styles.pageHeading}><div><p className={styles.eyebrow}>A PLACE FOR YOUR GOOD FINDS</p><h1>{mode === "cloud" ? "我的资源库" : "我的收藏"}<span className={styles.titleDot}>.</span></h1><p>统一收好工具、网站和资料，需要时快速找到。</p><span className={styles.resourceCount}>{loading ? mode === "cloud" ? "正在读取私人云端…" : "正在读取本机收藏…" : `${resources.length} 条资源 · ${activeResources.filter(item => item.status === "inbox").length} 条待整理`}</span></div><div className={styles.headingActions}><button className={styles.secondaryButton} disabled={loading || Boolean(pending)} type="button" onClick={() => setDialog("import")}><ManagerIcon name="upload" />导入书签</button><button className={styles.primaryButton} disabled={loading || Boolean(pending)} type="button" onClick={() => setDialog("add")}><ManagerIcon name="plus" />添加资源</button></div></header>
+      <header className={styles.pageHeading}><div><p className={styles.eyebrow}>A PLACE FOR YOUR GOOD FINDS</p><h1>{mode === "cloud" ? "我的资源库" : "我的收藏"}<span className={styles.titleDot}>.</span></h1><p>统一收好工具、网站和资料，需要时快速找到。</p><span className={styles.resourceCount}>{loading ? mode === "cloud" ? "正在读取私人云端…" : "正在读取本机收藏…" : `${resources.length} 条资源 · ${activeResources.filter(item => item.status === "inbox").length} 条待整理`}</span></div><div className={styles.headingActions}><button className={styles.secondaryButton} disabled={loading || Boolean(pending)} type="button" onClick={() => mode === "cloud" ? router.push("/tools/manage/imports") : setDialog("import")}><ManagerIcon name="upload" />导入书签</button><button className={styles.primaryButton} disabled={loading || Boolean(pending)} type="button" onClick={() => setDialog("add")}><ManagerIcon name="plus" />添加资源</button></div></header>
       <div className={styles.searchRow}><div className={styles.search}><ManagerIcon name="search" /><input ref={searchRef} type="search" aria-label="搜索我的收藏" placeholder="搜索名称、域名、用途或标签…" value={query} onChange={event => { setQuery(event.target.value); setLimit(40); }} /><kbd>/</kbd></div><button type="button" className={`${styles.secondaryButton} ${styles.mobileFilter}`} onClick={() => setDialog("filters")}><ManagerIcon name="list" />筛选</button></div>
       {message ? <div className={styles.feedback} role="status"><ManagerIcon name="check" /><p>{message}</p><button type="button" className={styles.iconButton} aria-label="关闭提示" onClick={() => setMessage("")}><ManagerIcon name="close" /></button></div> : null}
       {publicationPending ? <div className={styles.publicationRetry}><p>公开版本已保存，缓存刷新尚未完成。</p><button type="button" className={styles.secondaryButton} disabled={Boolean(pending)} onClick={refreshPublication}>{pending === "refresh-publication" ? "正在刷新…" : "重试公开页刷新"}</button></div> : null}
       {error && dialog !== "history" ? <ManagerErrorNotice message={error} status={errorStatus} onRefresh={refreshList} /> : null}
-      {pins.length && view === "all" && !category && !query && !kind ? <section className={styles.pins} aria-label="我的常用入口"><p>常用入口 <span>随手置顶，随时回来</span></p><div>{pins.map(item => <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"><ManagerResourceIcon name={item.name} icon={item.icon} /><strong>{item.name}</strong><ManagerIcon name="arrow" /></a>)}</div></section> : null}
+      {(batchFilterId || resourceFilterId) ? <div className={smartStyles.batchFilter}><span>{batchFilterId ? "正在查看本批新增的收藏" : "正在查看指定收藏"}</span><div>{batchFilterId ? <Link className={smartStyles.textLink} href={`/tools/manage/imports/${encodeURIComponent(batchFilterId)}`}>返回导入工作区</Link> : null}<button type="button" className={smartStyles.textLink} onClick={clearBatchFilter}>查看全部收藏</button></div></div> : null}{pins.length && view === "all" && !category && !query && !kind && !batchFilterId && !resourceFilterId ? <section className={styles.pins} aria-label="我的常用入口"><p>常用入口 <span>随手置顶，随时回来</span></p><div>{pins.map(item => <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"><ManagerResourceIcon name={item.name} icon={item.icon} /><strong>{item.name}</strong><ManagerIcon name="arrow" /></a>)}</div></section> : null}
       <div className={styles.toolbar}><div className={styles.kindTabs} aria-label="资源类型"><button type="button" aria-pressed={!kind} onClick={() => { setKind(""); setLimit(40); }}>全部类型</button>{RESOURCE_KINDS.map(item => <button key={item} type="button" aria-pressed={kind === item} onClick={() => { setKind(item); setLimit(40); }}>{RESOURCE_KIND_LABELS[item]}</button>)}</div><div className={styles.viewControls}><select aria-label="收藏排序" value={sort} onChange={event => setSort(event.target.value)}><option value="newest">最近添加</option><option value="oldest">最早添加</option><option value="name">按名称</option></select><div className={styles.segmented}><button type="button" aria-label="列表视图" aria-pressed={layout === "list"} onClick={() => setLayout("list")}><ManagerIcon name="list" /></button><button type="button" aria-label="网格视图" aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}><ManagerIcon name="grid" /></button></div></div></div>
       {category || view !== "all" || query || kind ? <div className={styles.filterSummary}><span>{category || (view === "archived" ? "已归档" : VIEWS.find(item => item.id === view)?.label)}{kind ? ` / ${RESOURCE_KIND_LABELS[kind]}` : ""}{query ? ` / “${query}”` : ""} · {filtered.length} 条</span><button type="button" onClick={clearFilters}>清除筛选</button></div> : null}
       {selected.size ? <div className={styles.bulkBar}><strong>已选 {selected.size} 条</strong><select aria-label="批量分类" value="" disabled={Boolean(pending)} onChange={event => { if (event.target.value) void bulk({ category: event.target.value }); }}><option value="">调整分类</option>{RESOURCE_CATEGORIES.map(item => <option key={item}>{item}</option>)}</select><button type="button" disabled={Boolean(pending)} onClick={() => bulk({ status: "organized" })}>标为已整理</button><button type="button" disabled={Boolean(pending)} onClick={() => bulk({ visibility: "private" })}>设为仅自己</button><button type="button" disabled={Boolean(pending)} onClick={() => bulk({ visibility: "public", status: "organized" })}>设为公开候选</button><button type="button" disabled={Boolean(pending)} onClick={() => bulk({ status: view === "archived" ? "organized" : "archived" })}>{view === "archived" ? "恢复为已整理" : "归档"}</button><button type="button" disabled={Boolean(pending)} onClick={() => bulk({ pinned: true })}>设为常用</button><button type="button" onClick={() => setSelected(new Set())}>取消选择</button>{pending === "bulk" ? <span role="status">正在保存…</span> : null}</div> : null}

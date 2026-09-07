@@ -36,6 +36,11 @@ if (options[0] !== '--typecheck') {
   run('owner authentication and recovery', 'scripts/cloud-auth-check.mjs');
   run('cloud library transactions and database privileges', 'scripts/cloud-library-check.mjs');
   run('cloud API access and public cache boundary', 'scripts/check-cloud-api.mjs');
+  run('smart import grouping and conservative deduplication', 'scripts/check-smart-import.mjs');
+  run('persistent import transactions and safe undo', 'scripts/check-smart-import-store.mjs');
+  run('custom model configuration and transport security', 'scripts/check-smart-api.mjs');
+  run('durable analysis and privacy boundary', 'scripts/check-smart-analysis.mjs');
+  run('private smart feature route guards', 'scripts/check-smart-routes.mjs');
   run('public resource navigation and search', 'scripts/check-resource-state.mjs');
   run('orbit interaction and media lifecycle', 'scripts/check-orbit-motion.mjs');
   run('lint', cli('eslint', 'eslint'), ['.', '--max-warnings=0']);

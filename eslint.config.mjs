@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Workflow SDK regenerates these routes from src/workflows during typegen/dev/build.
+    "src/app/.well-known/workflow/v1/**",
   ]),
 ]);
 

@@ -63,6 +63,7 @@ export function createCloudLibraryStore(pool: LibraryPool, owner: () => string =
   async function handle(value: unknown, ownerId: string) {
     authorize(ownerId);
     const input = libraryObject(value);
+    if (input.action === "undo-import" && typeof input.batchId === "string" && input.batchId.startsWith("smart-")) throw new LibraryInputError("请在导入工作区预览并撤回本批，已编辑或曾公开的资源需要保护。", 409);
     return transaction(async client => {
       const current = await read(client, ownerId);
       if (LIBRARY_MUTATIONS.has(String(input.action))) assertRevision(input.libraryRevision, current.revision);
@@ -72,6 +73,9 @@ export function createCloudLibraryStore(pool: LibraryPool, owner: () => string =
       if (transition.publishedSnapshot) {
         const published = await client.query("UPDATE library_public.snapshot SET snapshot = $1::jsonb WHERE singleton = true RETURNING singleton", [JSON.stringify(transition.publishedSnapshot)]);
         if (!published.rows[0]) throw new LibraryInputError("公开快照尚未初始化。", 503);
+        // The staging migration is additive: old installations can still publish before it is applied.
+        const imports = await client.query("SELECT to_regclass('library_private.import_groups') AS relation");
+        if (imports.rows[0]?.relation) await client.query("UPDATE library_private.import_groups SET first_published_at=COALESCE(first_published_at,now()) WHERE created_resource_id=ANY($1::text[])", [transition.publishedSnapshot.resources.map(resource => resource.id)]);
       }
       return { ...transition.result, libraryRevision: revision, publishedIds: (transition.publishedSnapshot ?? current.snapshot).resources.map(resource => resource.id) };
     });

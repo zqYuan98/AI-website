@@ -1,0 +1,70 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
+import { RESOURCE_CATEGORIES, RESOURCE_KINDS, RESOURCE_KIND_LABELS } from "@/lib/resource-types";
+import type { SmartImportBatchContext, SmartImportFields, SmartImportGroupPage, SmartImportSource } from "@/lib/smart-import-types";
+import { ManagerDialog } from "./manager-primitives";
+import { SmartFeedback } from "./smart-import-feedback";
+import { SmartImportResolve } from "./smart-import-resolve";
+import { smartError, smartErrorStatus, smartRequest } from "./smart-api";
+import styles from "./smart-import.module.css";
+
+export function SmartImportFieldsEditor({ context, groupIds, initial, onClose, onChanged }: { context: SmartImportBatchContext; groupIds: string[]; initial?: SmartImportFields; onClose: () => void; onChanged: (value: SmartImportBatchContext) => void }) {
+  const [snapshot] = useState(context);
+  const [fields, setFields] = useState<Partial<SmartImportFields>>(() => initial ? { ...initial } : {});
+  const [tagsText, setTagsText] = useState(() => initial?.tags.join("，") ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState(0);
+  async function save(event: FormEvent) {
+    event.preventDefault(); if (busy || !Object.keys(fields).length) return; setBusy(true); setError("");
+    try { const result = await smartRequest<SmartImportBatchContext>("imports", { action: "decide", batchId: snapshot.batch.id, batchRevision: snapshot.batchRevision, groupIds, fields }); onChanged(result); onClose(); }
+    catch (failure) { setError(smartError(failure)); setStatus(smartErrorStatus(failure)); } finally { setBusy(false); }
+  }
+  return <ManagerDialog title={initial ? "确认资源分类" : `批量调整 ${groupIds.length} 个候选`} description="只修改导入候选。确认分类不会自动入库或公开。" onClose={onClose} busy={busy}><form className={styles.dialogBody} onSubmit={save}><fieldset className={styles.formFields} disabled={busy}>
+    {initial ? <label>资源名称<input required maxLength={200} value={fields.name ?? ""} onChange={event => setFields(value => ({ ...value, name: event.target.value }))} /></label> : null}
+    <div className={styles.formGrid}><label>资源类型<select value={fields.kind ?? ""} onChange={event => setFields(value => ({ ...value, kind: event.target.value as SmartImportFields["kind"] }))}><option value="" disabled>保持原类型</option>{RESOURCE_KINDS.map(kind => <option key={kind} value={kind}>{RESOURCE_KIND_LABELS[kind]}</option>)}</select></label><label>用途分类<select value={fields.category ?? ""} onChange={event => setFields(value => ({ ...value, category: event.target.value as SmartImportFields["category"] }))}><option value="" disabled>保持原分类</option>{RESOURCE_CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label></div>
+    <label>标签<input value={tagsText} placeholder={initial ? "用逗号分隔" : "未编辑时保持；填写会替换所选标签"} onChange={event => { setTagsText(event.target.value); setFields(value => ({ ...value, tags: event.target.value.split(/[,，]/).map(item => item.trim()).filter(Boolean) })); }} /></label>
+    {initial ? <label>一句用途<textarea rows={3} maxLength={1000} value={fields.description ?? ""} onChange={event => setFields(value => ({ ...value, description: event.target.value }))} /></label> : null}
+    <SmartFeedback error={error} status={status} /><div className={styles.dialogActions}><button type="button" className={styles.secondaryButton} onClick={onClose}>返回</button><button type="submit" className={styles.primaryButton} disabled={!Object.keys(fields).length}>{busy ? "正在保存…" : "确认并保存分类"}</button></div>
+  </fieldset></form></ManagerDialog>;
+}
+
+export function SmartImportSourceEditor({ context, source, onClose, onChanged }: { context: SmartImportBatchContext; source: SmartImportSource; onClose: () => void; onChanged: (value: SmartImportBatchContext) => void }) {
+  const [snapshot] = useState(context);
+  const [fields, setFields] = useState(() => ({ name: source.name, url: source.url, sourceFolder: source.sourceFolder, createdAt: source.createdAt, excluded: source.excluded }));
+  const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [status, setStatus] = useState(0);
+  async function save(event: FormEvent) {
+    event.preventDefault(); if (busy) return; setBusy(true); setError("");
+    try { const result = await smartRequest<SmartImportBatchContext>("imports", { action: "edit-source", batchId: snapshot.batch.id, batchRevision: snapshot.batchRevision, sourceId: source.id, changes: fields }); onChanged(result); onClose(); }
+    catch (failure) { setError(smartError(failure)); setStatus(smartErrorStatus(failure)); } finally { setBusy(false); }
+  }
+  return <ManagerDialog title="编辑书签来源" description="修改链接会重新计算去重关系；原有来源仍可追溯，受影响的候选需要重新确认。" onClose={onClose} busy={busy}><form className={styles.dialogBody} onSubmit={save}><fieldset className={styles.formFields} disabled={busy}>
+    <label>标题<input maxLength={200} value={fields.name} onChange={event => setFields(value => ({ ...value, name: event.target.value }))} /></label><label>完整链接<textarea rows={3} value={fields.url} onChange={event => setFields(value => ({ ...value, url: event.target.value }))} spellCheck={false} /></label><label>来源文件夹<input value={fields.sourceFolder} onChange={event => setFields(value => ({ ...value, sourceFolder: event.target.value }))} /></label><label>原始收藏时间<input value={fields.createdAt} placeholder="原始时间或留空" onChange={event => setFields(value => ({ ...value, createdAt: event.target.value }))} /></label><label className={styles.checkLabel}><input type="checkbox" checked={fields.excluded} onChange={event => setFields(value => ({ ...value, excluded: event.target.checked }))} />排除此来源，不参与去重与入库</label>
+    <SmartFeedback error={error} status={status} /><div className={styles.dialogActions}><button type="button" className={styles.secondaryButton} onClick={onClose}>返回</button><button type="submit" className={styles.primaryButton}>{busy ? "正在保存…" : "保存并重新核对"}</button></div>
+  </fieldset></form></ManagerDialog>;
+}
+
+export function SmartImportDetail({ context, groupId: initialGroupId, onClose, onChanged, onRegrouped }: { context: SmartImportBatchContext; groupId: string; onClose: () => void; onChanged: (value: SmartImportBatchContext) => void; onRegrouped: (value: SmartImportBatchContext) => void }) {
+  const [groupId, setGroupId] = useState(initialGroupId);
+  const [data, setData] = useState<SmartImportGroupPage | null>(null); const [page, setPage] = useState(1); const [version, setVersion] = useState(0);
+  const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [status, setStatus] = useState(0);
+  const [source, setSource] = useState<SmartImportSource | null>(null); const [edit, setEdit] = useState(false); const [resolveId, setResolveId] = useState<string | null>(null);
+  useEffect(() => { const controller = new AbortController(); smartRequest<SmartImportGroupPage>("imports", { action: "group", batchId: context.batch.id, groupId, page }, controller.signal).then(result => setData(result)).catch(failure => { if (!controller.signal.aborted) { setError(smartError(failure)); setStatus(smartErrorStatus(failure)); } }).finally(() => { if (!controller.signal.aborted) setLoading(false); }); return () => controller.abort(); }, [context.batch.id, groupId, page, version]);
+  function changed(result: SmartImportBatchContext) { onChanged(result); setData(null); setLoading(true); setVersion(value => value + 1); }
+  function regrouped(result: SmartImportBatchContext) { onRegrouped(result); onClose(); }
+  async function mutate(action: Record<string, unknown>) { if (!data || busy || loading) return; setBusy(true); setError(""); try { const result = await smartRequest<SmartImportBatchContext>("imports", { ...action, batchId: data.batch.id, batchRevision: data.batchRevision }); if (action.action === "representative") regrouped(result); else changed(result); } catch (failure) { setError(smartError(failure)); setStatus(smartErrorStatus(failure)); } finally { setBusy(false); } }
+  const group = data?.group;
+  return <><ManagerDialog title={group?.fields.name || "候选详情"} description="检查标题、来源与重复关系，再决定如何保留。" onClose={onClose} busy={busy} wide><div className={styles.dialogBody}>
+    <SmartFeedback error={error} status={status} />{loading ? <p className={styles.loading} role="status">正在读取候选…</p> : null}
+    {group && data ? <><div className={styles.detailLead}><span className={styles.statusBadge}>{group.readOnly ? "已处理" : group.categoryConfirmed ? "分类已确认" : "分类待确认"}</span><p className={styles.fullUrl}>{group.representative.url}</p><p>{group.fields.description || "尚未补充用途说明"}</p><div className={styles.chips}><span>{RESOURCE_KIND_LABELS[group.fields.kind]}</span><span>{group.fields.category}</span>{group.fields.tags.map(tag => <span key={tag}>{tag}</span>)}</div></div>
+      {group.readOnly ? <p className={styles.notice}>本组已有处理结果。后续内容修改请在正常收藏编辑器中进行。{group.outcome?.resourceId ? <Link href={`/tools/manage?resourceId=${encodeURIComponent(group.outcome.resourceId)}`} className={styles.textLink}>打开对应收藏 →</Link> : null}</p> : <><div className={styles.inlineActions}><button type="button" className={styles.secondaryButton} disabled={busy || loading} onClick={() => setEdit(true)}>编辑并确认分类</button><button type="button" className={styles.secondaryButton} disabled={busy || loading} onClick={() => void mutate({ action: "decide", groupIds: [group.id], decision: "keep" })}>确认保留</button><button type="button" className={styles.textLink} disabled={busy || loading} onClick={() => void mutate({ action: "decide", groupIds: [group.id], decision: group.decision === "ignore" ? "defer" : "ignore" })}>{group.decision === "ignore" ? "恢复待决定" : "忽略此组"}</button></div>
+      {group.reviewRequired ? <p className={styles.notice}>{group.reviewReasons.join("；") || "内容发生过变化，请检查后确认分类或保留决定。"}</p> : null}
+      {group.suggestion ? <section className={styles.suggestionPanel}><div className={styles.sectionTitle}><h3>{group.suggestion.source === "model" ? "模型建议" : "规则建议"}</h3><span className={styles.statusBadge}>{group.suggestion.confidence === "clear" ? "较明确" : "需人工确认"}</span></div><p>{RESOURCE_KIND_LABELS[group.suggestion.kind]} · {group.suggestion.category}</p><p>{group.suggestion.description}</p><p className={styles.help}>{group.suggestion.reason}</p><button type="button" className={styles.secondaryButton} disabled={busy || loading} onClick={() => void mutate({ action: "decide", groupIds: [group.id], adoptSuggestion: true })}>采用这条分类建议</button></section> : null}</>}
+      {group.matches.length || group.suspectedMatches.length ? <section className={styles.detailSection}><h3>与现有资源的关系</h3><p className={styles.help}>完整链接相同才自动视为重复。同域名或名称相近只供人工比较。</p><ul className={styles.matchList}>{[...group.matches, ...group.suspectedMatches].map(match => <li key={`${match.id}-${match.exact}`}><div><strong>{match.name}</strong><p className={styles.fullUrl}>{match.url}</p><span className={styles.help}>{match.reason} · {match.location === "publication" ? "仅存在于公开版本" : match.status === "archived" ? "已归档" : "现有收藏"}</span></div>{!group.readOnly && match.location === "library" ? <button type="button" className={styles.secondaryButton} onClick={() => setResolveId(match.id)}>比较与处理</button> : null}</li>)}</ul></section> : null}
+      {group.suspectedGroups?.length ? <section className={styles.detailSection}><h3>本批其他相似链接 <span>{group.suspectedGroupCount}</span></h3><p className={styles.help}>这些完整链接不同，仍是独立候选。请比较后分别决定保留或忽略，不会自动合并。</p><ul className={styles.matchList}>{group.suspectedGroups.map(item => <li key={item.id}><div><strong>{item.name}</strong><p className={styles.fullUrl}>{item.url}</p><p className={styles.help}>{item.reason}</p></div><button type="button" className={styles.secondaryButton} onClick={() => { setGroupId(item.id); setPage(1); setLoading(true); }}>查看此候选</button></li>)}</ul></section> : null}
+      <section className={styles.detailSection}><h3>全部来源 <span>{data.total}</span></h3><p className={styles.help}>每页 50 条。可选择代表标题与来源，其他原始来源会保留。</p><ul className={styles.sourceList}>{data.sources.map(item => <li key={item.id}><div><strong>{item.name || "未命名书签"}</strong>{item.id === group.representativeId ? <span className={styles.smallBadge}>当前代表</span> : null}{item.excluded ? <span className={styles.smallBadge}>已排除</span> : null}<p className={styles.fullUrl}>{item.url}</p><p className={styles.help}>{item.sourceFolder || "未分文件夹"}{item.createdAt ? ` · ${item.createdAt}` : ""}</p></div>{!group.readOnly ? <div className={styles.inlineActions}><button type="button" className={styles.textLink} disabled={busy || loading} onClick={() => setSource(item)}>编辑来源</button>{item.id !== group.representativeId && !item.excluded && !item.invalidReason ? <button type="button" className={styles.textLink} disabled={busy || loading} onClick={() => void mutate({ action: "representative", groupId, sourceId: item.id })}>设为代表</button> : null}</div> : null}</li>)}</ul><div className={styles.pagination}><button type="button" className={styles.secondaryButton} disabled={page <= 1 || loading} onClick={() => { setLoading(true); setPage(value => value - 1); }}>上一页</button><span>第 {page} / {Math.max(1, Math.ceil(data.total / 50))} 页</span><button type="button" className={styles.secondaryButton} disabled={page * 50 >= data.total || loading} onClick={() => { setLoading(true); setPage(value => value + 1); }}>下一页</button></div></section>
+    </> : null}
+  </div></ManagerDialog>{source && data ? <SmartImportSourceEditor context={data} source={source} onClose={() => setSource(null)} onChanged={regrouped} /> : null}{edit && data ? <SmartImportFieldsEditor context={data} groupIds={[groupId]} initial={data.group.fields} onClose={() => setEdit(false)} onChanged={changed} /> : null}{resolveId && data ? <SmartImportResolve context={data} group={data.group} resourceId={resolveId} onClose={() => setResolveId(null)} onChanged={changed} /> : null}</>;
+}

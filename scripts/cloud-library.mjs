@@ -64,7 +64,9 @@ async function main() {
   try {
     let result;
     if (command === "migrate") {
-      await pool.query(fs.readFileSync(path.join(root, "migrations", "library-001.sql"), "utf8"));
+      for (const filename of ["library-001.sql", "library-002-imports.sql", "library-003-smart-api.sql", "library-004-analysis.sql"]) {
+        await pool.query(fs.readFileSync(path.join(root, "migrations", filename), "utf8"));
+      }
       result = { migrated: true, initialized: false };
     } else if (command === "preview-initialize") {
       const source = publishedSource();

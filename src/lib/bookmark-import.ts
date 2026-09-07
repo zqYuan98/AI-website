@@ -17,7 +17,9 @@ export function bookmarkUrl(value: unknown): string {
 /** Conservative personal-bookmark identity: preserve host, path, query order, and fragment. */
 export function canonicalBookmarkUrl(value: string): string {
   const url = new URL(value);
-  for (const key of [...url.searchParams.keys()]) if (/^utm_/i.test(key)) url.searchParams.delete(key);
+  const parts = url.search.slice(1).split("&");
+  const retained = parts.filter(part => !/^utm_/i.test(new URLSearchParams(part).keys().next().value ?? ""));
+  if (retained.length !== parts.length) url.search = retained.join("&");
   return url.toString();
 }
 
@@ -59,16 +61,14 @@ export function validateImportCandidate(value: unknown): ImportCandidate {
 }
 
 /** Read Netscape bookmark HTML as tokens and text. It never creates a DOM or executes HTML. */
-export function parseBookmarkHtml(html: unknown, existingUrls: string[] = []) {
+export type ParsedBookmarkSource = ImportCandidate & { invalidReason: string | null };
+
+export function parseBookmarkHtmlDetailed(html: unknown): ParsedBookmarkSource[] {
   if (typeof html !== "string" || Buffer.byteLength(html, "utf8") > MAX_BOOKMARK_BYTES) throw new Error("书签 HTML 文件不能超过 2 MB。");
-  const seen = new Set(existingUrls.map(canonicalBookmarkUrl));
-  const items: ImportCandidate[] = [];
+  const items: ParsedBookmarkSource[] = [];
   const folders: string[] = [];
   let pendingFolder = "";
   let capture: { kind: "a" | "h3"; text: string; attrs: Record<string, string> } | null = null;
-  let duplicates = 0;
-  let invalid = 0;
-  const invalidItems: { name: string; url: string; reason: string }[] = [];
   let count = 0;
   const input = html.replace(/<!--[\s\S]*?(?:-->|$)/g, "").replace(/<(script|style)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi, "");
 
@@ -82,12 +82,9 @@ export function parseBookmarkHtml(html: unknown, existingUrls: string[] = []) {
         const seconds = Number(capture.attrs.add_date);
         const timestamp = seconds > 0 && seconds < 8640000000000 ? new Date(seconds * 1000).toISOString() : "";
         const item = validateImportCandidate({ name: plain(capture.text).slice(0, 120) || new URL(url).hostname, url, sourceFolder: folders.filter(Boolean).join(" / "), createdAt: timestamp });
-        const key = canonicalBookmarkUrl(item.url);
-        if (seen.has(key)) duplicates++;
-        else { seen.add(key); items.push(item); }
+        items.push({ ...item, invalidReason: null });
       } catch (error) {
-        invalid++;
-        if (invalidItems.length < 50) invalidItems.push({ name: plain(capture.text).slice(0, 120), url: String(capture.attrs.href ?? "").slice(0, 240), reason: error instanceof Error ? error.message : "书签格式不正确。" });
+        items.push({ name: plain(capture.text).slice(0, 120), url: String(capture.attrs.href ?? "").slice(0, 2048), sourceFolder: folders.filter(Boolean).join(" / ").slice(0, 1000), createdAt: "", invalidReason: error instanceof Error ? error.message : "书签格式不正确。" });
       }
     }
     capture = null;
@@ -110,5 +107,23 @@ export function parseBookmarkHtml(html: unknown, existingUrls: string[] = []) {
     }
   }
   finish();
+  return items;
+}
+
+export function parseBookmarkHtml(html: unknown, existingUrls: string[] = []) {
+  const seen = new Set(existingUrls.map(canonicalBookmarkUrl));
+  const items: ImportCandidate[] = [];
+  const invalidItems: { name: string; url: string; reason: string }[] = [];
+  let duplicates = 0, invalid = 0;
+  for (const source of parseBookmarkHtmlDetailed(html)) {
+    if (source.invalidReason) {
+      invalid++;
+      if (invalidItems.length < 50) invalidItems.push({ name: source.name, url: source.url.slice(0, 240), reason: source.invalidReason });
+    } else {
+      const key = canonicalBookmarkUrl(source.url);
+      if (seen.has(key)) duplicates++;
+      else { seen.add(key); items.push({ name: source.name, url: source.url, sourceFolder: source.sourceFolder, createdAt: source.createdAt }); }
+    }
+  }
   return { items, duplicates, invalid, invalidItems };
 }

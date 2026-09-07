@@ -47,3 +47,6 @@ vitamin-library-backup-*.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/.swc
+/.workflow-data/
+/.playwright-cli/
