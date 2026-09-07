@@ -1,4 +1,4 @@
-# 线上资源管理准备验收
+# 线上资源管理验收
 
 日期：2026-09-07
 
@@ -26,14 +26,25 @@
 - 本轮在隔离 Neon 数据库及本机真实 Next.js 服务完成云端浏览器流程：管理入口跳转登录；测试所有者登录成功；新增资源默认私有；整理为公开候选并保存后公开页仍为 0 条；预览确认后公开页出现 1 条；私人备注不进入预览或公开页面；改回私有后明确显示待撤下，确认发布后公开页恢复 0 条；退出后管理入口再次要求登录。管理和公开页面控制台没有 error。
 - 修复实际浏览器发现的 Next.js 内部请求 URL 归一化问题：用固定配置校验合法 Host，并保留精确 POST Origin、跨站拒绝和接口白名单。补充内部 URL + 正确 Host 的实际 handler 登录/会话/退出正例，以及错误或非法 Host、伪造转发头、缺失 Origin 和跨站反例，全部通过。
 
-## 实际开通状态与待完成项
+## 实际开通状态
 
 用户已亲自确认 Neon 条款，并明确授权本机 Vercel CLI；正式数据库 `vitamin-resource-library` 已建立，使用 Free 方案、iad1 区域，Neon 托管 Auth 关闭。数据库仅连接现有 `ai-website` 的 Production；隔离测试项目曾临时连接 Development，完成全部测试后已显式断开并删除，未操作正式资源。
 
-当前等待用户在本机受控终端创建唯一正式账号；最近核对正式账号数为 0。已打开终端并给出 `node --env-file=.env.cloud-setup.local scripts/cloud-auth.mjs create-owner`。密码不会通过聊天收集。生产启用变量尚未设置，本轮代码尚未推送部署。没有配置或发送恢复邮件。
+用户已在本机受控终端成功创建正式账号；独立只读核对总用户、固定 owner、非空密码 credential、owner 草稿、公开快照均为 1，公开资源仍为 274 条。密码未通过聊天收集。`RESOURCE_LIBRARY_MODE=cloud` 已设置到 Production，代码已推送 main。没有配置或发送恢复邮件。
 
-已通过实际 Vercel 部署 API 核对正式部署仍为 main 的 `5664ec418f35fb0d18023af35f738d363d9f27d1`，状态 READY，裸域名跳转到 www；正式认证地址采用 `https://www.notvitamin.com`。
+上线前通过实际 Vercel 部署 API 核对旧正式部署为 `5664ec418f35fb0d18023af35f738d363d9f27d1`，可作为代码回退版本。正式认证地址采用 `https://www.notvitamin.com`。
 
-云 UI 浏览器验收及隔离资源清理已完成。仍需正式账号创建、Production 启用、部署及线上回归；本机隔离账号登录的通过结果不代表用户正式账号已创建或完成线上登录。
+账号初始化曾失败但通用错误无法区分原因；CLI 现仅展示固定白名单中的输入或账号状态错误，密码长度立即校验，未知异常继续隐藏。非法密码不写入任何认证记录、数据库诊断不泄漏及完整认证回归通过。
+
+代码版本 `e232ca56788650b6334a1ab241265144b894e92c` 的 [GitHub Quality](https://github.com/zqYuan98/AI-website/actions/runs/34124909029) 全部通过。Vercel 正式部署 `dpl_ER3vdoc2JrHPuo4e4KxQSsnWpXXr` 为 READY，部署 API 确认 `www.notvitamin.com` 已指向该版本，从创建到就绪约 178 秒。
+
+正式域名验证结果：
+
+- `node scripts/check-smoke.mjs https://www.notvitamin.com --cloud` 通过：13 个公开页面及登录页正常，匿名管理入口跳转 `/login`，匿名云库读取被拒绝，本机维护 API 的所有检查方法均关闭。
+- 浏览器显示 274 条公开资源、4 个精选工具和 6 篇阅读资源；实际点击「管理资源」进入登录页，页面正常，控制台未发现 error。
+- 正式认证请求验证通过：空会话返回 null 且 no-store，固定站点来源可进入密码校验，不存在的测试账号返回 401，无 Origin 请求返回 403，公开注册返回 404。未使用或读取所有者密码。
+- 新部署上线后查询最近 15 分钟的 error 级运行日志，结果为空；这是本次验收窗口的观察，不代表持续监控。
+
+实际所有者的首次线上登录由本人使用刚设置的密码完成；本轮没有将该登录或跨设备访问标记为已验证。新增资源默认私有，确认发布才更新网站。管理入口为 [我的资源库](https://www.notvitamin.com/tools/manage)。
 
 配置与恢复步骤见 [线上管理台配置文档](../cloud-resource-manager-setup.md)。

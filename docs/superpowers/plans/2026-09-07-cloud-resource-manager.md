@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16.3.4, React 19, TypeScript, Better Auth, pg, Neon PostgreSQL.
 
-**Status (2026-09-07):** Implementation, the final quality gate/build, and real Neon auth/library checks are complete. Production environment preparation and the 274-resource published baseline are complete. Browser verification confirmed test-owner login, private saves, explicit publication, withdrawal, and logout; the disposable verification resource has been disconnected and deleted. The production owner account count is currently zero, so owner setup, final cloud activation, production deployment, and live verification remain pending. See `docs/reports/2026-09-07-cloud-resource-manager-verification.md`.
+**Status (2026-09-07):** Complete and deployed. The unique production owner and credential account are verified, cloud mode is active in Production, and code version `e232ca5` is READY on `www.notvitamin.com`. GitHub Quality, live HTTP smoke, anonymous/auth-origin guards, and public/login browser checks passed. The 274-resource public baseline is preserved. Real isolated Neon tests verified authenticated saves/publication/withdrawal/logout; the disposable verification resource was removed. The owner can now sign in with their own password; that personal login and cross-device use are not claimed as agent-verified. See `docs/reports/2026-09-07-cloud-resource-manager-verification.md`.
 
 ## 1. Configuration and owner authentication
 
@@ -46,8 +46,9 @@
 - [x] Confirm browser login with the isolated test owner and successful private resource saves.
 - [x] Finish browser acceptance of explicit publication and withdrawal, including consistent public-page results and logout access checks. Prior local desktop/mobile layout checks remain valid; actual cross-device production login awaits deployment.
 - [x] Disconnect and delete the disposable verification resource after completing database and browser checks.
-- [ ] Complete the production owner's password setup and verify exactly one configured owner with a credential account. The latest read-only check found zero production users and zero credential accounts; this step is awaiting the user.
-- [ ] Enable cloud mode and deploy production only after owner setup and final acceptance pass. Final activation and deployment are still pending; keep real private backups outside Git and production data isolated from preview and unrelated projects.
+- [x] Complete the production owner's password setup and verify exactly one configured owner with a credential account. The user entered their password directly; independent read-only counts and the activation guard passed.
+- [x] Enable cloud mode and deploy production after owner setup and final acceptance pass. Production data remains isolated from Preview and unrelated projects.
+- [x] Verify the production alias, public pages, login redirect, closed local APIs, anonymous/CSRF/signup rejection, and the deployment's error-log window. Record personal first login and cross-device use as user acceptance rather than claiming an unperformed check.
 
 ## Contracts between parallel tasks
 
