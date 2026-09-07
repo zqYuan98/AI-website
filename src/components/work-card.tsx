@@ -16,7 +16,7 @@ export function WorkCard({ work, eager = false }: { work: WorkMeta; eager?: bool
   return (
     <Link
       href={`/work/${work.slug}`}
-      className="work-card card-surface card-lift group flex flex-col overflow-hidden"
+      className="work-card card-surface card-lift group flex min-h-[272px] flex-col overflow-hidden"
     >
       <div className="work-card-media relative aspect-video overflow-hidden bg-background-subtle">
         {work.cover ? (
@@ -41,7 +41,7 @@ export function WorkCard({ work, eager = false }: { work: WorkMeta; eager?: bool
             </h3>
             {work.placeholder ? <PlaceholderBadge /> : null}
           </div>
-          <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#627093]">
+          <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-[#627093]">
             {work.summary}
           </p>
         </div>
@@ -49,7 +49,7 @@ export function WorkCard({ work, eager = false }: { work: WorkMeta; eager?: bool
           {work.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="rounded-md bg-[#eef4ff] px-2 py-0.5 text-[11px] leading-4 text-[#1f5fd7] even:bg-[#f1edff] even:text-[#5944d6]"
+              className="rounded-md bg-[#eef4ff] px-2 py-0.5 text-xs leading-4 text-[#1f5fd7] even:bg-[#f1edff] even:text-[#5944d6]"
             >
               {tag}
             </span>

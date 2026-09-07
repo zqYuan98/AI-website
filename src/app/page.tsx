@@ -4,7 +4,7 @@ import { PostCard } from "@/components/post-card";
 import { SectionHeading } from "@/components/section-heading";
 import { WorkCard } from "@/components/work-card";
 import { getFeaturedWork, getLatestPosts } from "@/lib/content";
-import { getFeaturedTools } from "@/lib/curation";
+import { getFeaturedPublicResources } from "@/lib/public-resources";
 import { ToolIcon } from "@/components/tools/tool-icon";
 import { site } from "@/lib/site";
 import { HeroMotion } from "@/components/home/hero-motion";
@@ -21,7 +21,7 @@ const heroBaseImage = {
 export default function HomePage() {
   const featured = getFeaturedWork(3);
   const posts = getLatestPosts(3);
-  const tools = getFeaturedTools(4);
+  const tools = getFeaturedPublicResources(4);
 
   return (
     <>
@@ -99,14 +99,14 @@ export default function HomePage() {
           <SectionHeading
             eyebrow="Curated, not collected"
             title="维他命精选"
-            description="不是把链接堆满一页，而是说明每个工具进入真实工作的场景与边界。"
+            description="分享进入真实工作流的工具，写清使用场景与适用边界。"
             href="/tools"
-            linkLabel="打开工具箱"
+            linkLabel="打开资源库"
           />
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {tools.map((tool) => (
               <a
-                key={tool.slug}
+                key={tool.id}
                 href={tool.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -114,18 +114,18 @@ export default function HomePage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <ToolIcon name={tool.name} src={tool.icon} size={36} />
-                  <span className="rounded-full bg-[#edf4ff] px-2 py-1 text-[10px] font-medium text-[#2363cf]">
+                  <span className="shrink-0 rounded-full bg-[#edf4ff] px-2 py-1 text-xs font-medium text-[#2363cf]">
                     站点在用
                   </span>
                 </div>
-                <h3 className="mt-3 flex items-center gap-1 text-sm font-semibold text-[#07175c]">
+                <h3 className="mt-3 flex items-center gap-1 text-base font-semibold text-[#07175c] [overflow-wrap:anywhere]">
                   {tool.name}
                   <span aria-hidden="true" className="text-[#4f79cb] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
                 </h3>
-                <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-foreground-muted">
-                  {tool.scenario}
+                <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-foreground-muted [overflow-wrap:anywhere]">
+                  {tool.description}
                 </p>
-                <p className="mt-3 text-[10px] font-medium tracking-[0.08em] text-foreground-subtle uppercase">
+                <p className="mt-3 text-xs font-medium leading-5 text-foreground-subtle">
                   {tool.category}
                 </p>
               </a>

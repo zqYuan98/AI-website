@@ -56,4 +56,16 @@ for (let offset = 0; offset < publicRoutes.length; offset += 4) {
 }
 await check('/tools/manage', 404);
 await check('/api/local-tools', 404);
-console.log(`[smoke] Passed ${publicRoutes.length} public pages and 2 production maintenance guards at ${base.origin}`);
+await check('/api/local-library', 404);
+for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']) {
+  for (const route of ['/api/local-library', '/api/local-tools']) {
+    const response = await fetch(new URL(route, base), {
+      method, headers: { 'Content-Type': 'application/json', Origin: base.origin },
+      ...(method === 'HEAD' ? {} : { body: JSON.stringify({ action: 'list' }) }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    assert.equal(response.status, 404, `${method} ${route}: local API must be closed in production`);
+    await response.body?.cancel();
+  }
+}
+console.log(`[smoke] Passed ${publicRoutes.length} public pages, local manager guard and all production API method guards at ${base.origin}`);

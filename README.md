@@ -21,7 +21,7 @@ bun run build
 bun run start --hostname 127.0.0.1 --port 3100
 ```
 
-`check` 依次执行内容验证、工具与本地维护安全回归、工具 URL 状态/搜索测试、ESLint、路由类型生成及 TypeScript 检查。`build` 执行相同检查，全部通过后才运行 `next build`。也可分别运行 `check:content`、`check:tools`、`check:tools-state`、`lint`、`typecheck`。
+`check` 依次执行内容验证、工具与本地维护安全回归、工具及公开资源 URL 状态/搜索测试、私有收藏与公开发布边界回归、首页动效检查、ESLint、路由类型生成及 TypeScript 检查。`build` 执行相同检查，全部通过后才运行 `next build`。也可分别运行 `check:content`、`check:tools`、`check:tools-state`、`lint`、`typecheck`。
 
 生产服务启动后，在另一个终端运行：
 
@@ -29,7 +29,13 @@ bun run start --hostname 127.0.0.1 --port 3100
 bun run check:smoke http://127.0.0.1:3100
 ```
 
-冒烟检查用只读 HTTP 请求验证公开页面为 200、有唯一 H1 和标题，并要求 `/tools/manage`、`/api/local-tools` 为 404。它从内容文件自动枚举详情页，目前覆盖 13 个公开页面。该检查针对生产模式，不能用开发服务替代。
+冒烟检查验证公开页面为 200、有唯一 H1 和标题，并要求 `/tools/manage`、`/api/local-tools`、`/api/local-library` 在生产环境关闭。本机 API 的全部 HTTP 方法都检查为 404。它从内容文件自动枚举详情页，目前覆盖 13 个公开页面。该检查针对生产模式，不能用开发服务替代。
+
+## 个人收藏与公开资源
+
+公开资源页位于 `/tools`，本机管理台位于开发地址的 `/tools/manage`。新增与导入资源默认私有，保存在仓库外；只有预览并生成公开版本后，才写入 `content/resource-library.json`，依照原有部署流程上线。私人备注与原书签文件夹不会进入公开版本。
+
+收藏导入、备份、既有内容迁移和存储位置见 [资源库维护说明](docs/tools-maintenance.md)。
 
 ## 编辑内容
 

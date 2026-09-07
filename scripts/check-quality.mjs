@@ -32,6 +32,8 @@ if (options[0] !== '--typecheck') {
   run('content', 'scripts/check-content.mjs');
   run('tools and local maintenance guards', 'scripts/check-tools.mjs');
   run('tool URL state and search', 'scripts/check-tools-state.mjs');
+  run('private library and publication boundary', 'scripts/check-library.mjs');
+  run('public resource navigation and search', 'scripts/check-resource-state.mjs');
   run('orbit interaction and media lifecycle', 'scripts/check-orbit-motion.mjs');
   run('lint', cli('eslint', 'eslint'), ['.', '--max-warnings=0']);
 }

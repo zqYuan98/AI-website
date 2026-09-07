@@ -31,11 +31,11 @@ export function PostCard({ post }: { post: PostMeta }) {
           </h3>
           {post.placeholder ? <PlaceholderBadge /> : null}
         </div>
-        <p className="mt-0.5 line-clamp-1 text-xs leading-[18px] text-[#526385] sm:text-[13px]">
+        <p className="mt-0.5 line-clamp-1 text-sm leading-6 text-[#526385]">
           {post.summary}
         </p>
       </div>
-      <div className="col-start-2 flex shrink-0 items-center gap-4 text-[11px] text-[#607091] sm:col-start-auto sm:min-w-[190px] sm:justify-end sm:text-xs">
+      <div className="col-start-2 flex shrink-0 items-center gap-4 text-xs text-[#607091] sm:col-start-auto sm:min-w-[190px] sm:justify-end">
         <time dateTime={post.date}>{post.date}</time>
         {post.readingTime ? (
           <span className="inline-flex items-center gap-1.5">
