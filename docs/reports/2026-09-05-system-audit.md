@@ -1,8 +1,10 @@
 # notvitamin.com 系统级审查
 
-审查日期：2026-09-05（Asia/Shanghai）  
-审查对象：[notvitamin.com 正式站](https://www.notvitamin.com/)  
-代码基线：`c7f9ed4903299182290446eb24fc4748429d3525`  
+审查日期：2026-09-05（Asia/Shanghai）
+
+审查对象：[notvitamin.com 正式站](https://www.notvitamin.com/)
+
+代码基线：`c7f9ed4903299182290446eb24fc4748429d3525`
 性质：只读审查与研究；未修改应用代码、依赖、线上配置或部署。
 
 ## 1. 核心结论
