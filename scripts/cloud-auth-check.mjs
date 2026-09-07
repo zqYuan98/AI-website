@@ -6,6 +6,7 @@ import { getMigrations } from 'better-auth/db/migration';
 import { createTsLoader } from './lib/load-ts.mjs';
 import { createOwnerAccount, resetOwnerPassword } from './cloud-auth-operations.mjs';
 import { createPglitePool } from './lib/pglite-pool.mjs';
+import { ownerCliErrorMessage } from './lib/owner-cli-errors.mjs';
 
 const origin = 'https://owner.example.test';
 const ownerId = 'test-fixed-owner';
@@ -69,6 +70,18 @@ try {
   assert.equal((await getMigrations(auth.options)).toBeCreated.length, 0, 'Migration is repeatable');
   const context = await auth.$context;
   phase = 'fixture account creation';
+  for (const invalidPassword of ['', 'too-short', 'x'.repeat(129)]) {
+    await assert.rejects(createOwnerAccount(auth, ownerId, 'owner@example.test', invalidPassword), error => {
+      assert.match(ownerCliErrorMessage(error), /密码须为 12–128 个字符/);
+      return true;
+    });
+    for (const model of ['user', 'account', 'session']) assert.equal((await context.adapter.findMany({ model })).length, 0);
+  }
+  const unsafeDiagnostic = 'postgresql://owner:PRIVATE-ERROR-SENTINEL@database.example.test/app';
+  for (const error of [new Error(unsafeDiagnostic), new Error(`邮箱格式不正确。 ${unsafeDiagnostic}`), unsafeDiagnostic]) {
+    assert(!ownerCliErrorMessage(error).includes('PRIVATE-ERROR-SENTINEL'), 'Only complete, allowlisted messages may be shown');
+  }
+  assert.match(ownerCliErrorMessage(new Error('两次密码不一致，未修改账号。')), /两次密码不一致/);
   for (const email of ['a..b@example.test', '.a@example.test', 'owner@localhost', 'owner @example.test', ' \t\r\n', null, `${'a'.repeat(244)}@example.test`]) {
     await assert.rejects(createOwnerAccount(auth, ownerId, email, password), /邮箱格式不正确/);
     for (const model of ['user', 'account', 'session']) {

@@ -7,6 +7,7 @@ import { getMigrations } from 'better-auth/db/migration';
 import { createTsLoader } from './lib/load-ts.mjs';
 import { createOwnerAccount, resetOwnerPassword } from './cloud-auth-operations.mjs';
 import { selectAdminDatabaseUrl } from './lib/database-admin-url.mjs';
+import { ownerCliErrorMessage } from './lib/owner-cli-errors.mjs';
 
 const command = process.argv[2];
 if (process.argv.length !== 3 || !['migrate', 'create-owner', 'reset-password'].includes(command)) {
@@ -46,13 +47,14 @@ try {
     let email;
     if (command === 'create-owner') email = await question('所有者邮箱：');
     const password = await question('新密码（12–128 个字符，输入不显示）：', true);
+    if (password.length < 12 || password.length > 128) throw new Error('密码须为 12–128 个字符。');
     const confirmation = await question('再次输入新密码：', true);
     if (password !== confirmation) throw new Error('两次密码不一致，未修改账号。');
     if (command === 'create-owner') await createOwnerAccount(auth, config.ownerId, email, password);
     else await resetOwnerPassword(auth, config.ownerId, password);
     console.log(command === 'create-owner' ? '已建立预先配置 ID 对应的唯一所有者账号；未登录、未发布资源。' : '所有者密码已重置，全部旧会话已撤销。');
   }
-} catch {
-  console.error('操作未完成。请在受控终端核对本机配置、数据库权限、账号状态及密码要求后重试；没有输出凭据或数据库错误。');
+} catch (error) {
+  console.error(ownerCliErrorMessage(error));
   process.exitCode = 1;
 } finally { await pool?.end(); }
