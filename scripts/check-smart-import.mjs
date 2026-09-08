@@ -62,6 +62,23 @@ assert.equal(importGroupDto(historical).proposal.fields.category, historical.fie
 assert.equal(importGroupDto(historical).proposal.fields.description, historical.fields.description);
 assert.deepEqual(importGroupDto(historical).proposal.adoptedFields, [], "Viewing an old completed import cannot accept suggestions that were never saved.");
 
+const sourceRule = { ...structuredClone(classified[0]), id: "source-rule" };
+const sourceModel = { ...structuredClone(classified[0]), id: "source-model", suggestion: { ...manual.suggestion, tags: ["visible-model-tag"], description: "Visible model description" } };
+const sourceManual = { ...structuredClone(manual), id: "source-manual" };
+const sourceMissing = { ...structuredClone(classified[0]), id: "source-missing", suggestion: null };
+const sourceGroups = [sourceRule, sourceModel, sourceManual, sourceMissing];
+const beforeSourceFilter = structuredClone(sourceGroups);
+assert.deepEqual(filteredImportGroups(sourceGroups, { suggestionSource: "model" }).map(group => group.id), [sourceModel.id, sourceManual.id]);
+assert.deepEqual(filteredImportGroups(sourceGroups, { suggestionSource: "rule" }).map(group => group.id), [sourceRule.id]);
+assert.deepEqual(filteredImportGroups(sourceGroups, {}), sourceGroups, "An omitted source filter preserves the existing result set.");
+assert.deepEqual(filteredImportGroups(sourceGroups, { suggestionSource: "model", kind: "tool", category: "AI 与自动化", search: "visible model description" }).map(group => group.id), [sourceModel.id]);
+assert.deepEqual(filteredImportGroups(sourceGroups, { suggestionSource: "model", search: "visible-model-tag" }).map(group => group.id), [sourceModel.id]);
+assert.deepEqual(filteredImportGroups(sourceGroups, { suggestionSource: "model", category: "写作与知识", search: "Owner title" }).map(group => group.id), [sourceManual.id]);
+assert.equal(filteredImportGroups([sourceManual], { suggestionSource: "model", search: "Model description" }).length, 0, "A description explicitly cleared by the owner must not match hidden model text.");
+assert.equal(filteredImportGroups([sourceManual], { suggestionSource: "model", search: "model" }).length, 0, "Explicitly cleared tags must not match the unaccepted model tags.");
+assert.equal(filteredImportGroups([sourceModel], { search: "Visible model description" }).length, 0, "Existing search filters keep their prior semantics when no suggestion source is requested.");
+assert.deepEqual(sourceGroups, beforeSourceFilter, "Suggestion source filters only read retained suggestions and never adopt them.");
+
 const resultOrigins = parseImportSources("https://github.com/result-ready\nhttps://github.com/result-ready?utm_source=copy\nhttps://unknown.example.com/a\nhttps://existing.example.com/a\nhttps://archive.example.com/a\nhttps://publication.example.com/a\njavascript:bad\nhttps://excluded.example.com/a", "lines");
 resultOrigins.at(-1).excluded = true;
 const resultGroups = regroupImportSources(resultOrigins, [], [

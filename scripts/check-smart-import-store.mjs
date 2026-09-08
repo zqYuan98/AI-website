@@ -47,6 +47,12 @@ try {
   assert.equal(created.batch.summary.groupTotal, 6);
   assert.equal(created.batch.summary.duplicateSources, 1);
   assert.equal(created.batch.summary.invalidSources, 1);
+  assert.equal((await handle({ action: "get", batchId, filters: { view: "invalid" } })).total, 1);
+  for (const suggestionSource of ["rule", "model"]) {
+    const noSuggestedSources = await handle({ action: "get", batchId, filters: { view: "invalid", suggestionSource } });
+    assert.equal(noSuggestedSources.total, 0);
+    assert.deepEqual(noSuggestedSources.invalidSources, [], "Invalid sources have no retained group suggestion to match.");
+  }
   assert.equal((await create(content)).batch.id, batchId, "Unfinished identical uploads resume persisted decisions.");
   await assert.rejects(() => store.handle({ action: "get", batchId }, "another-owner"), status(403));
   assert.equal((await db.query("SELECT count(*)::int AS n FROM library_private.import_sources WHERE batch_id=$1", [batchId])).rows[0].n, 8);
@@ -219,6 +225,7 @@ try {
   await batchWrite(regroupBatch.batch.id, { action: "edit-source", sourceId: mergedGroups.groups[0].representativeId, changes: { excluded: true } });
   const excludedSources = await handle({ action: "get", batchId: regroupBatch.batch.id, filters: { view: "excluded" } });
   assert.equal(excludedSources.invalidSources.length, 1);
+  assert.equal((await handle({ action: "get", batchId: regroupBatch.batch.id, filters: { view: "excluded", suggestionSource: "rule" } })).total, 0, "Excluded sources do not inherit an active group's retained suggestion.");
   await batchWrite(regroupBatch.batch.id, { action: "edit-source", sourceId: excludedSources.invalidSources[0].id, changes: { excluded: false } });
   assert.equal((await get(regroupBatch.batch.id)).groups[0].sourceCount, 2);
 
@@ -238,12 +245,36 @@ try {
   const acceptanceCapture = await store.claimTargets({ batchId: acceptanceId, batchRevision: acceptancePage.batchRevision, groupIds: [acceptanceGroup.id] }, owner);
   await store.applySuggestions({ batchId: acceptanceId, results: [{ id: acceptanceGroup.id, groupRevision: acceptanceCapture.targets[0].groupRevision,
     suggestion: { kind: "tool", category: "AI 与自动化", tags: ["model-tag"], description: "Model description", reason: "Fixture suggestion", confidence: "clear", source: "model" } }] }, owner);
+  const beforeSourceRead = await get(acceptanceId);
+  const beforeSourceRows = (await db.query("SELECT data FROM library_private.import_groups WHERE batch_id=$1 ORDER BY id", [acceptanceId])).rows;
+  const modelResults = await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "model", kind: "tool", category: "AI 与自动化", search: "Model description" } });
+  assert.deepEqual(modelResults.groups.map(group => group.id), [acceptanceGroup.id]);
+  assert.equal(modelResults.facets.kinds.find(facet => facet.value === "tool").count, 1, "A source-only view uses the displayed proposal for facets too.");
+  assert.deepEqual(modelResults.batch.summary, beforeSourceRead.batch.summary, "Source filtering does not reclassify or change full-batch counts.");
+  const ruleResults = await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "rule" } });
+  assert.deepEqual(ruleResults.groups.map(group => group.id), [unclearGroup.id]);
+  const selectedModel = await handle({ action: "select", batchId: acceptanceId, batchRevision: beforeSourceRead.batchRevision, filters: { suggestionSource: "model", kind: "tool", search: "model-tag" } });
+  assert.deepEqual(selectedModel.groupIds, [acceptanceGroup.id], "Explicit selection and the source-filtered page share one projected scope.");
+  const conflictingResult = await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "model", resultStatus: "review" } });
+  assert.equal(conflictingResult.total, 0, "Suggestion source composes with existing result-state filters.");
+  for (const suggestionSource of ["invented", "", null, 7]) {
+    await assert.rejects(() => handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource } }), status(400));
+    await assert.rejects(() => handle({ action: "select", batchId: acceptanceId, batchRevision: beforeSourceRead.batchRevision, filters: { suggestionSource } }), status(400));
+  }
+  const afterSourceRead = await get(acceptanceId);
+  assert.equal(afterSourceRead.batchRevision, beforeSourceRead.batchRevision);
+  assert.equal(afterSourceRead.libraryRevision, beforeSourceRead.libraryRevision);
+  assert.deepEqual((await db.query("SELECT data FROM library_private.import_groups WHERE batch_id=$1 ORDER BY id", [acceptanceId])).rows, beforeSourceRows, "Source get/select must not persist suggestions or mutate staged groups.");
   await batchWrite(acceptanceId, { action: "decide", groupIds: [acceptanceGroup.id], fields: { name: "Owner accepted name", category: "写作与知识", tags: [], description: "" } });
   acceptancePage = await get(acceptanceId);
   const displayed = acceptancePage.groups.find(group => group.id === acceptanceGroup.id);
   assert.equal(displayed.decision, "defer", "The simplified path must not need a preliminary keep operation.");
   assert.deepEqual(displayed.proposal.fields, { name: "Owner accepted name", kind: "tool", category: "写作与知识", tags: [], description: "" });
   assert.deepEqual(displayed.proposal.adoptedFields, ["kind"]);
+  const manualSourceResults = await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "model", category: "写作与知识", search: "Owner accepted name" } });
+  assert.deepEqual(manualSourceResults.groups.map(group => group.id), [acceptanceGroup.id]);
+  assert.equal((await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "model", search: "Model description" } })).total, 0);
+  assert.equal((await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "model", search: "model-tag" } })).total, 0);
   const fixedSelection = await handle({ action: "select", batchId: acceptanceId, batchRevision: acceptancePage.batchRevision, filters: { resultStatus: "ready" } });
   assert.deepEqual(fixedSelection.groupIds, [acceptanceGroup.id]);
   const toolResults = await handle({ action: "get", batchId: acceptanceId, filters: { resultStatus: "ready", kind: "tool" } });
@@ -301,6 +332,10 @@ try {
   assert.equal(acceptancePage.batch.summary.resultCounts.collected, 1);
   assert.equal(acceptancePage.batch.summary.resultCounts.review, 1);
   assert.equal(acceptancePage.batch.summary.resultCounts.skipped, 0);
+  const collectedModelResults = await handle({ action: "get", batchId: acceptanceId, filters: { suggestionSource: "model", resultStatus: "collected" } });
+  assert.deepEqual(collectedModelResults.groups.map(group => group.id), [acceptanceGroup.id], "Retained model suggestions remain inspectable after collection.");
+  const collectedModelSelection = await handle({ action: "select", batchId: acceptanceId, batchRevision: acceptancePage.batchRevision, filters: { suggestionSource: "model", resultStatus: "collected" } });
+  assert.deepEqual(collectedModelSelection.groupIds, [], "The new read filter must not make completed groups selectable.");
   assert.equal(acceptancePage.groups.find(group => group.id === unclearGroup.id).outcome, null);
   const unclearPreview = await acceptancePreview(acceptanceId, [unclearGroup.id]);
   assert.equal(unclearPreview.items[0].disposition, "needs-review");

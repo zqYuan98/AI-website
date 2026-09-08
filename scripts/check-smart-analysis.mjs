@@ -12,6 +12,7 @@ const owner = 'analysis-test-owner';
 const load = createTsLoader();
 const { createSmartAnalysisStore } = load('src/lib/server/smart-analysis-store.ts');
 const { LibraryInputError } = load('src/lib/library-domain.ts');
+const { SmartApiCallError } = load('src/lib/server/smart-api-client.ts');
 const { SMART_API_DEFAULT_SETTINGS } = load('src/lib/smart-api-types.ts');
 let config;
 const candidates = new Map();
@@ -87,6 +88,10 @@ async function launch(batchId) {
   const result = await store.start({ confirmation: prepared.preview.confirmation, requestId: prepared.requestId }, owner);
   return { ...result, ...prepared };
 }
+async function launchScope(batchId, groupIds) {
+  const preview = await store.preview({ batchId, batchRevision: '1', groupIds, configVersion: config.version }, owner);
+  return store.start({ confirmation: preview.confirmation, requestId: randomUUID() }, owner);
+}
 async function drain(id) {
   for (let i = 0; i < 20; i++) {
     const result = await Promise.all([store.processNext(id), store.processNext(id), store.processNext(id)]);
@@ -129,6 +134,29 @@ try {
   assert.equal(checkedTargetIds.length, 1000, 'Stop resolving further domains as soon as the 500 public slots are filled.');
   assert.equal(filteredPreview.estimatedRequests, 20);
   assert(filteredPreview.excluded.slice(-20).every(target => target.reason.includes('限制')));
+  const trialInput = { batchId: filteredBatch, batchRevision: '1', groupIds: candidates.get(filteredBatch).map(target => target.id), configVersion: config.version, limit: 5 };
+  for (const limit of [0, 1, 6, '5', null, true]) await assert.rejects(filteringStore.preview({ ...trialInput, limit }, owner), error => error.status === 400);
+  const trialPreview = await filteringStore.preview(trialInput, owner);
+  assert.deepEqual(trialPreview.targets.map(target => target.id), candidates.get(filteredBatch).slice(500, 505).map(target => target.id), 'The five-item trial fills only after privacy filtering.');
+  assert.equal(trialPreview.limits.maxCandidates, 5);
+  assert.equal(trialPreview.estimatedRequests, 1);
+  assert.equal(trialPreview.excluded.length, 1015);
+  assert(trialPreview.excluded.slice(-515).every(target => target.reason.includes('尚未发送') && !target.reason.includes('失败')));
+  const trialRequestId = randomUUID();
+  const trialJob = await filteringStore.start({ confirmation: trialPreview.confirmation, requestId: trialRequestId, groupIds: candidates.get(filteredBatch).map(target => target.id), limit: undefined }, owner);
+  assert.equal(trialJob.job.total, 5, 'Start cannot enlarge a saved five-item confirmation through extra input.');
+  assert.equal((await filteringStore.start({ confirmation: trialPreview.confirmation, requestId: trialRequestId }, owner)).job.id, trialJob.job.id);
+  const trialComplete = await drain(trialJob.job.id);
+  assert.equal(trialComplete.succeeded, 5); assert.equal(trialComplete.failed, 0); assert.equal(trialComplete.requests, 1);
+  const trialScope = (await pool.query('SELECT target_ids FROM library_private.analysis_requests WHERE job_id=$1', [trialJob.job.id])).rows;
+  assert.deepEqual(trialScope[0].target_ids, trialPreview.targets.map(target => target.id));
+  const trialIds = new Set(trialPreview.targets.map(target => target.id));
+  assert(candidates.get(filteredBatch).filter(target => !trialIds.has(target.id)).every(target => target.groupRevision === '1'), 'Untested candidates remain untouched.');
+  assert.equal((await filteringStore.preview({ ...trialInput, limit: undefined }, owner)).targets.length, 500, 'Omitting trial mode preserves the full-preview behavior.');
+  await setConfig({ batchSize: 2, maxRequests: 1 });
+  const cappedTrial = await filteringStore.preview({ ...trialInput, configVersion: config.version }, owner);
+  assert.equal(cappedTrial.targets.length, 2); assert.equal(cappedTrial.estimatedRequests, 1, 'A five-item trial cannot bypass a smaller configured request cap.');
+  await setConfig({ batchSize: 25, maxRequests: 20 });
   const repeatedDomainBatch = await batch(525), checkedDomainsInPreview = [];
   candidates.get(repeatedDomainBatch).forEach((target, index) => { target.domain = index < 500 ? 'private-repeated.example.com' : 'public-repeated.example.com'; });
   const cachingStore = createSmartAnalysisStore(pool, () => owner, { ...deps, checkPublicTargets: async targets => {
@@ -189,6 +217,73 @@ try {
   pausedView = (await store.control({ action: 'resume', jobId: pausedView.id, revision: pausedView.revision }, owner)).job;
   assert.equal((await drain(pausedView.id)).succeeded, 1);
 
+  const overlapBatch = await batch(2), overlapIds = candidates.get(overlapBatch).map(target => target.id);
+  const olderOverlap = (await launchScope(overlapBatch, [overlapIds[0]])).job;
+  const pausedOverlap = (await store.control({ action: 'pause', jobId: olderOverlap.id, revision: olderOverlap.revision }, owner)).job;
+  const newerOverlap = (await launchScope(overlapBatch, [overlapIds[0]])).job;
+  await assert.rejects(store.control({ action: 'resume', jobId: pausedOverlap.id, revision: pausedOverlap.revision }, owner), error => error.status === 409);
+  assert.deepEqual((await store.get(pausedOverlap.id, owner)).job, pausedOverlap, 'An overlapping resume cannot change the old job or its revision.');
+  const disjointOverlap = (await launchScope(overlapBatch, [overlapIds[1]])).job;
+  await store.control({ action: 'pause', jobId: disjointOverlap.id, revision: disjointOverlap.revision }, owner);
+  const disjointPaused = (await store.get(disjointOverlap.id, owner)).job;
+  assert.equal((await store.control({ action: 'resume', jobId: disjointPaused.id, revision: disjointPaused.revision }, owner)).job.status, 'queued', 'Another active job must not block a disjoint scope.');
+  await store.control({ action: 'cancel', jobId: newerOverlap.id, revision: newerOverlap.revision }, owner);
+  assert.equal((await store.control({ action: 'resume', jobId: pausedOverlap.id, revision: pausedOverlap.revision }, owner)).job.status, 'queued');
+  assert.equal((await drain(olderOverlap.id)).succeeded, 1);
+  assert.equal((await drain(disjointOverlap.id)).succeeded, 1);
+
+  const racingBatch = await batch(1), racingJob = await launch(racingBatch);
+  const racingPaused = (await store.control({ action: 'pause', jobId: racingJob.job.id, revision: racingJob.job.revision }, owner)).job;
+  const racingPreview = await job(racingBatch);
+  const raced = await Promise.allSettled([
+    store.control({ action: 'resume', jobId: racingPaused.id, revision: racingPaused.revision }, owner),
+    store.start({ confirmation: racingPreview.preview.confirmation, requestId: racingPreview.requestId }, owner),
+  ]);
+  assert.equal(raced.filter(result => result.status === 'fulfilled').length, 1, 'Concurrent start/resume approval must have exactly one winner.');
+  assert.equal(raced.find(result => result.status === 'rejected').reason.status, 409);
+  assert.equal((await drain(raced.find(result => result.status === 'fulfilled').value.job.id)).succeeded, 1);
+
+  const inflightBatch = await batch(2), inflightIds = candidates.get(inflightBatch).map(target => target.id);
+  const firstInflight = (await launchScope(inflightBatch, [inflightIds[0]])).job;
+  await store.control({ action: 'pause', jobId: firstInflight.id, revision: firstInflight.revision }, owner);
+  const secondInflight = (await launchScope(inflightBatch, [inflightIds[0]])).job;
+  const waitingInflight = (await store.control({ action: 'pause', jobId: secondInflight.id, revision: secondInflight.revision }, owner)).job;
+  let inflightAssertionError;
+  async function assertInflightBlocked(action, expectedStatus) {
+    const current = (await store.get(firstInflight.id, owner)).job;
+    await store.control({ action, jobId: current.id, revision: current.revision }, owner);
+    assert.equal((await pool.query('SELECT status FROM library_private.analysis_requests WHERE job_id=$1 ORDER BY created_at DESC LIMIT 1', [firstInflight.id])).rows[0].status, expectedStatus);
+    await assert.rejects(store.control({ action: 'resume', jobId: waitingInflight.id, revision: waitingInflight.revision }, owner), error => error.status === 409);
+    await assert.rejects(launchScope(inflightBatch, [inflightIds[0]]), error => error.status === 409);
+    if (expectedStatus === 'sent') {
+      await pool.query("UPDATE library_private.analysis_requests SET lease_until=now()-interval '1 second' WHERE job_id=$1 AND status='sent'", [firstInflight.id]);
+      const callsBeforeFreshConfirmation = sends;
+      const newlyConfirmed = (await launchScope(inflightBatch, [inflightIds[0]])).job;
+      assert.equal(newlyConfirmed.status, 'queued', 'A cancelled job with an expired lease must not permanently block a newly previewed and explicitly confirmed scope.');
+      assert.equal(sends, callsBeforeFreshConfirmation, 'Lease expiry itself neither dispatches nor automatically retries a model request.');
+      await store.control({ action: 'cancel', jobId: newlyConfirmed.id, revision: newlyConfirmed.revision }, owner);
+    }
+    assert.deepEqual((await store.get(waitingInflight.id, owner)).job, waitingInflight);
+    const disjoint = (await launchScope(inflightBatch, [inflightIds[1]])).job;
+    await store.control({ action: 'cancel', jobId: disjoint.id, revision: disjoint.revision }, owner);
+  }
+  let firstPaused = (await store.get(firstInflight.id, owner)).job;
+  await store.control({ action: 'resume', jobId: firstPaused.id, revision: firstPaused.revision }, owner);
+  beforeSendEffect = async () => { try { await assertInflightBlocked('pause', 'reserved'); } catch (error) { inflightAssertionError = error; throw error; } };
+  const beforeReservedOverlap = sends;
+  await store.processNext(firstInflight.id);
+  assert.ifError(inflightAssertionError);
+  assert.equal(sends, beforeReservedOverlap, 'A paused reservation is released without sending, while duplicate approvals stay blocked until settlement.');
+  beforeSendEffect = undefined;
+  firstPaused = (await store.get(firstInflight.id, owner)).job;
+  await store.control({ action: 'resume', jobId: firstPaused.id, revision: firstPaused.revision }, owner);
+  sendEffect = async () => { try { await assertInflightBlocked('cancel', 'sent'); } catch (error) { inflightAssertionError = error; throw error; } };
+  await store.processNext(firstInflight.id);
+  assert.ifError(inflightAssertionError);
+  sendEffect = undefined;
+  assert.equal((await store.control({ action: 'resume', jobId: waitingInflight.id, revision: waitingInflight.revision }, owner)).job.status, 'queued', 'Once the cancelled in-flight call settles, an explicitly approved retry may proceed.');
+  assert.equal((await drain(waitingInflight.id)).succeeded, 1);
+
   const versionBatch = await batch(1);
   const versionJob = await launch(versionBatch);
   await setConfig({ baseUrl: 'https://another.example/v1' });
@@ -207,12 +302,58 @@ try {
   assert.equal(failed.failed, 1);
   assert.equal(failed.possibleCharge, true);
   assert(!JSON.stringify(failed).includes('secret-synthetic'));
+  const unknownFailure = (await pool.query("SELECT state->'lastFailure' AS failure FROM library_private.analysis_jobs WHERE id=$1", [failed.id])).rows[0].failure;
+  assert.equal(unknownFailure.outcome, 'unknown');
+  assert(!JSON.stringify(unknownFailure).includes('secret-synthetic'), 'An arbitrary exception is persisted only as a generic safe failure.');
   const beforeRetry = sends;
   await store.processNext(failed.id);
   assert.equal(sends, beforeRetry, 'Ambiguous/failed provider calls do not retry automatically');
   sendEffect = undefined;
   await store.control({ action: 'resume', jobId: failed.id, revision: failed.revision, retryFailed: true }, owner);
   assert.equal((await drain(failed.id)).succeeded, 1);
+  assert.equal((await pool.query("SELECT state->'lastFailure' AS failure FROM library_private.analysis_jobs WHERE id=$1", [failed.id])).rows[0].failure, null, 'An explicit retry clears obsolete failure metadata.');
+
+  const retryOverlapBatch = await batch(1), retryOverlap = await launch(retryOverlapBatch);
+  sendEffect = () => { throw new SmartApiCallError('测试请求被拒绝。', 'rejected', 502, 403, 'json'); };
+  const retryOverlapFailed = await drain(retryOverlap.job.id);
+  sendEffect = undefined;
+  const newerRetry = await launch(retryOverlapBatch);
+  await assert.rejects(store.control({ action: 'resume', jobId: retryOverlapFailed.id, revision: retryOverlapFailed.revision, retryFailed: true }, owner), error => error.status === 409);
+  assert.deepEqual((await store.get(retryOverlapFailed.id, owner)).job, retryOverlapFailed, 'A blocked retry preserves failures, possible-charge warning and revision.');
+  await store.control({ action: 'cancel', jobId: newerRetry.job.id, revision: newerRetry.job.revision }, owner);
+  await store.control({ action: 'resume', jobId: retryOverlapFailed.id, revision: retryOverlapFailed.revision, retryFailed: true }, owner);
+  assert.equal((await drain(retryOverlapFailed.id)).succeeded, 1);
+
+  for (const failure of [
+    new SmartApiCallError('网关要求浏览器验证（HTTP 403，HTML响应），服务器 API 请求无法完成，请联系服务方放行 API 访问。', 'rejected', 502, 403, 'html', 'browser_challenge'),
+    new SmartApiCallError('模型未返回兼容的分类结果，请检查模型或调整服务配置。', 'invalid_response', 502),
+    new SmartApiCallError('模型请求超时，结果未知且可能已计费，请确认后再重试。', 'unknown', 504),
+  ]) {
+    const providerJob = await launch(await batch(1));
+    failure.headers = { Authorization: 'Bearer provider-secret-do-not-store' };
+    failure.body = 'RAW-PROVIDER-CONTENT-DO-NOT-STORE';
+    failure.cause = new Error('provider-secret-do-not-store');
+    sendEffect = () => { throw failure; };
+    const beforeProviderFailure = sends;
+    const providerResult = await drain(providerJob.job.id);
+    assert.equal(providerResult.status, 'paused'); assert.equal(providerResult.failed, 1);
+    assert.equal(providerResult.possibleCharge, true, 'Existing conservative charge protection is retained for every sent failure.');
+    assert(providerResult.message.includes(failure.message), 'The safe specific failure is visible through the existing job message.');
+    const diagnostic = (await pool.query("SELECT state->'lastFailure' AS failure FROM library_private.analysis_jobs WHERE id=$1", [providerJob.job.id])).rows[0].failure;
+    assert.equal(diagnostic.outcome, failure.outcome);
+    assert.equal(diagnostic.status, failure.status);
+    assert.equal(diagnostic.upstreamStatus, failure.upstreamStatus);
+    assert.equal(diagnostic.responseType, failure.responseType);
+    assert.equal(diagnostic.accessRestriction, failure.accessRestriction);
+    assert(!JSON.stringify(diagnostic).includes('provider-secret'));
+    assert(!JSON.stringify(diagnostic).includes('RAW-PROVIDER'));
+    if (failure.outcome === 'rejected') assert(providerResult.message.includes('拒绝'));
+    if (failure.outcome === 'invalid_response') assert(providerResult.message.includes('兼容性或完整性'));
+    if (failure.outcome === 'unknown') assert(providerResult.message.includes('结果未知') && providerResult.message.includes('可能已计费'));
+    await store.processNext(providerJob.job.id);
+    assert.equal(sends, beforeProviderFailure + 1, 'Specific provider errors still pause without automatic retry.');
+    sendEffect = undefined;
+  }
 
   await setConfig({ inputPricePerMillion: 1, outputPricePerMillion: 1, estimatedBudget: 0.00001 });
   const capped = await launch(await batch(1));

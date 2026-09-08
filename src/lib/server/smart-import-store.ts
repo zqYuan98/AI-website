@@ -35,10 +35,11 @@ function updateIntent(context: Context, group: ImportGroupRecord) {
 function filters(value: unknown): SmartImportFilters {
   if (value === undefined) return {};
   const input = importRecord(value);
-  if (Object.keys(input).some(key => !["view", "resultStatus", "search", "folder", "domain", "kind", "category", "decision"].includes(key))) throw new LibraryInputError("筛选条件不正确。");
+  if (Object.keys(input).some(key => !["view", "resultStatus", "suggestionSource", "search", "folder", "domain", "kind", "category", "decision"].includes(key))) throw new LibraryInputError("筛选条件不正确。");
   for (const item of Object.values(input)) importText(item, 1000);
   if (input.view !== undefined && !["review", "suggested", "duplicates", "invalid", "excluded", "all"].includes(String(input.view))) throw new LibraryInputError("筛选视图不正确。");
   if (input.resultStatus !== undefined && !["ready", "review", "skipped", "collected"].includes(String(input.resultStatus))) throw new LibraryInputError("整理结果筛选不正确。");
+  if (input.suggestionSource !== undefined && !["rule", "model"].includes(String(input.suggestionSource))) throw new LibraryInputError("建议来源筛选不正确。");
   return input as SmartImportFilters;
 }
 function suggestionMode(value: unknown): SmartImportSuggestionMode {
@@ -195,8 +196,9 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
         regroup(context);
         const selectedFilters = filters(input.filters), page = pageNumber(input.page), selected = filteredImportGroups(context.groups, selectedFilters);
         const sourceView = selectedFilters.view === "invalid" || selectedFilters.view === "excluded";
-        const invalid = context.sources.filter(source => selectedFilters.view === "excluded" ? source.excluded : source.invalidReason && !source.excluded);
-        return { ...response(context), groups: selected.slice((page - 1) * 50, page * 50).map(importGroupDto), invalidSources: sourceView ? invalid.slice((page - 1) * 50, page * 50).map(sourceDto) : [], page, pageSize: 50, total: sourceView ? invalid.length : selected.length, facets: importFacets(context.sources, context.groups, Boolean(selectedFilters.resultStatus)) };
+        // Invalid/excluded origins have no active group suggestion to match a source filter.
+        const invalid = selectedFilters.suggestionSource ? [] : context.sources.filter(source => selectedFilters.view === "excluded" ? source.excluded : source.invalidReason && !source.excluded);
+        return { ...response(context), groups: selected.slice((page - 1) * 50, page * 50).map(importGroupDto), invalidSources: sourceView ? invalid.slice((page - 1) * 50, page * 50).map(sourceDto) : [], page, pageSize: 50, total: sourceView ? invalid.length : selected.length, facets: importFacets(context.sources, context.groups, Boolean(selectedFilters.resultStatus || selectedFilters.suggestionSource)) };
       }
       if (input.action === "group") {
         regroup(context);

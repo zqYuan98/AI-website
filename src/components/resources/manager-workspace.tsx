@@ -9,6 +9,7 @@ import { ManagerDialog, ManagerErrorNotice, ManagerIcon, ManagerResourceIcon, ty
 import { ManagerEditor } from "./manager-editor";
 import { ManagerImport } from "./manager-import";
 import { ManagerPublish } from "./manager-publish";
+import { LibraryNavigation } from "./library-navigation";
 import styles from "./manager-workspace.module.css";
 import smartStyles from "./smart-import.module.css";
 
@@ -185,6 +186,7 @@ export function ResourceManager({ mode = "local", email }: { mode?: ManagerMode;
 
   return <section className={styles.workspace}><Suspense fallback={null}><ManagerLocationObserver /></Suspense>
     <div className={styles.workspaceTop}><span className={styles.workspaceLabel}><span className={styles.brandMark}>NV</span>我的资源库 <span className={styles.localBadge}>{mode === "cloud" ? "私人云端" : "本机管理"}</span></span><div className={styles.workspaceAccount}>{mode === "cloud" && email ? <span className={styles.accountEmail}>{email}</span> : null}<a className={styles.publicLink} href="/tools" target="_blank" rel="noreferrer">查看公开页 <ManagerIcon name="arrow" /></a>{mode === "cloud" ? <button type="button" className={styles.signOutButton} disabled={Boolean(pending)} onClick={signOut}>{pending === "signout" ? "正在退出…" : "退出"}</button> : null}</div></div>
+    {mode === "cloud" ? <LibraryNavigation active="collection" /> : null}
     <div className={styles.workspaceGrid}><aside className={styles.sidebar}>{sidebarContent}</aside><div className={styles.main}>
       <header className={styles.pageHeading}><div><p className={styles.eyebrow}>A PLACE FOR YOUR GOOD FINDS</p><h1>{mode === "cloud" ? "我的资源库" : "我的收藏"}<span className={styles.titleDot}>.</span></h1><p>统一收好工具、网站和资料，需要时快速找到。</p><span className={styles.resourceCount}>{loading ? mode === "cloud" ? "正在读取私人云端…" : "正在读取本机收藏…" : `${resources.length} 条资源 · ${activeResources.filter(item => item.status === "inbox").length} 条待整理`}</span></div><div className={styles.headingActions}><button className={styles.secondaryButton} disabled={loading || Boolean(pending)} type="button" onClick={() => mode === "cloud" ? router.push("/tools/manage/imports") : setDialog("import")}><ManagerIcon name="upload" />导入书签</button><button className={styles.primaryButton} disabled={loading || Boolean(pending)} type="button" onClick={() => setDialog("add")}><ManagerIcon name="plus" />添加资源</button></div></header>
       <div className={styles.searchRow}><div className={styles.search}><ManagerIcon name="search" /><input ref={searchRef} type="search" aria-label="搜索我的收藏" placeholder="搜索名称、域名、用途或标签…" value={query} onChange={event => { setQuery(event.target.value); setLimit(40); }} /><kbd>/</kbd></div><button type="button" className={`${styles.secondaryButton} ${styles.mobileFilter}`} onClick={() => setDialog("filters")}><ManagerIcon name="list" />筛选</button></div>

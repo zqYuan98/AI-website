@@ -124,6 +124,9 @@ export function createApiConfigStore(pool: LibraryPool, owner: () => string = ex
       await lockOwner(client, ownerId);
       const current = await row(client, ownerId, true);
       version(input.version, current ? String(current.version) : "0");
+      // Re-saving identical settings must not invalidate an already tested and enabled service.
+      // Keep this after owner/version checks; an explicitly supplied key is always a replacement.
+      if (current && replacement === undefined && JSON.stringify(normalizeApiSettings(current.settings)) === JSON.stringify(settings)) return view(current);
       const nextVersion = current ? String(BigInt(String(current.version)) + BigInt(1)) : "1";
       let plaintext = replacement;
       if (plaintext === undefined && current?.encrypted_key && normalizeApiSettings(current.settings).baseUrl === settings.baseUrl) plaintext = resolveRow(current, ownerId).apiKey;

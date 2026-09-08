@@ -40,6 +40,7 @@ if (options[0] !== '--typecheck') {
   run('persistent import transactions and safe undo', 'scripts/check-smart-import-store.mjs');
   run('custom model configuration and transport security', 'scripts/check-smart-api.mjs');
   run('durable analysis and privacy boundary', 'scripts/check-smart-analysis.mjs');
+  run('AI connection and task interface state', 'scripts/check-smart-ui-state.mjs');
   run('private smart feature route guards', 'scripts/check-smart-routes.mjs');
   run('public resource navigation and search', 'scripts/check-resource-state.mjs');
   run('orbit interaction and media lifecycle', 'scripts/check-orbit-motion.mjs');

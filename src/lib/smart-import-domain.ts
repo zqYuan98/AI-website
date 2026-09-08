@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { bookmarkUrl, canonicalBookmarkUrl, MAX_BOOKMARK_BYTES, MAX_IMPORT_ITEMS, parseBookmarkHtmlDetailed, validateImportCandidate } from "./bookmark-import";
 import { LibraryInputError } from "./library-domain";
-import { RESOURCE_CATEGORIES, RESOURCE_KINDS, type LibraryResource, type PublicLibrarySnapshot } from "./resource-types";
+import { RESOURCE_CATEGORIES, RESOURCE_KINDS, RESOURCE_KIND_LABELS, type LibraryResource, type PublicLibrarySnapshot } from "./resource-types";
 import type { SmartImportDecision, SmartImportFields, SmartImportFilters, SmartImportGroup, SmartImportSource, SmartImportSuggestion, SmartImportSummary, SmartImportFacets, SmartImportExistingMatch, SmartImportProposal, SmartImportSuggestionMode, SmartImportResultStatus } from "./smart-import-types";
 
 export type ImportSourceRecord = SmartImportSource & {
@@ -275,18 +275,22 @@ export function importSummary(sources: ImportSourceRecord[], groups: ImportGroup
 export function filteredImportGroups(groups: ImportGroupRecord[], filters: SmartImportFilters): ImportGroupRecord[] {
   const query = filters.search?.trim().toLowerCase();
   return groups.filter(group => {
+    if (filters.suggestionSource && group.suggestion?.source !== filters.suggestionSource) return false;
     if (filters.resultStatus && importResult(group).status !== filters.resultStatus) return false;
     if (filters.view === "invalid" || filters.view === "excluded") return false;
     if (filters.view === "duplicates" && group.matchKind === "new" && group.sourceCount === 1) return false;
     if (filters.view === "suggested" && (group.suggestion?.confidence !== "clear" || group.readOnly || group.reviewRequired || group.suspectedMatches.length || group.suspectedGroupCount || group.matchKind !== "new")) return false;
     if (filters.view === "review" && (group.readOnly || group.decision === "ignore" || (group.suggestion?.confidence === "clear" && !group.reviewRequired && !group.suspectedMatches.length && !group.suspectedGroupCount && group.matchKind !== "published-only"))) return false;
     if (filters.decision && filters.decision !== group.decision) return false;
-    const proposed = filters.resultStatus ? projectImportAcceptance(group).fields : null;
+    const proposed = filters.resultStatus || filters.suggestionSource ? projectImportAcceptance(group).fields : null;
     if (filters.kind && filters.kind !== (proposed?.kind ?? group.fields.kind)) return false;
     if (filters.category && filters.category !== (proposed?.category ?? (group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category))) return false;
     if (filters.folder && !group.sourceFolders.includes(filters.folder)) return false;
     if (filters.domain && new URL(group.representative.url).hostname !== filters.domain) return false;
-    return !query || `${group.fields.name} ${group.representative.url} ${group.sourceFolders.join(" ")}`.toLowerCase().includes(query);
+    const searchableFields = filters.suggestionSource && proposed
+      ? `${proposed.name} ${proposed.kind} ${RESOURCE_KIND_LABELS[proposed.kind]} ${proposed.category} ${proposed.tags.join(" ")} ${proposed.description}`
+      : group.fields.name;
+    return !query || `${searchableFields} ${group.representative.url} ${group.sourceFolders.join(" ")}`.toLowerCase().includes(query);
   });
 }
 export function importFacets(sources: ImportSourceRecord[], groups: ImportGroupRecord[], useProposals = false): SmartImportFacets {

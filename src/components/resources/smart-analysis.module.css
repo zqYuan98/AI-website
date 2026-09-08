@@ -1,0 +1,31 @@
+.panel { margin-bottom: 24px; border: 1px solid #cddded; border-radius: 14px; background: #fff; overflow: hidden; }
+.header { padding: 23px 25px; background: linear-gradient(125deg, #eef5ff, #f8fbff); }
+.eyebrow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 18px; font-size: 15px; color: #345d8b; }
+.eyebrow > strong { letter-spacing: .035em; }
+.eyebrow a { text-decoration: underline; text-underline-offset: 3px; }
+.header h2 { margin: 12px 0 7px; font-size: 23px; line-height: 1.5; font-weight: 650; color: #17365f; }
+.header p { margin: 6px 0 0; font-size: 16px; color: #4e6685; line-height: 1.8; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 17px; }
+.actions :is(button, a) { min-height: 44px; font-size: 16px; }
+.help { font-size: 14px !important; }
+.job { padding: 20px 25px; border-top: 1px solid #dce6f2; }
+.jobTitle { display: flex; align-items: center; justify-content: space-between; gap: 9px; flex-wrap: wrap; color: #253f62; font-size: 17px; }
+.jobTitle strong { overflow-wrap: anywhere; }
+.job p { font-size: 15px; line-height: 1.8; color: #536986; margin: 8px 0; overflow-wrap: anywhere; }
+.job progress { width: 100%; height: 9px; margin: 16px 0 4px; accent-color: #2868c7; }
+.message { border-left: 3px solid #85a9df; padding: 7px 12px; background: #f2f6fc; border-radius: 0 6px 6px 0; }
+.attention .message { border-color: #c98d35; background: #fff8ec; color: #745322; }
+.history { border-top: 1px solid #dce6f2; }
+.history > summary { padding: 16px 25px; font-size: 15px; color: #506b8f; cursor: pointer; min-height: 48px; }
+.historyNote { margin: 0; padding: 15px 25px; font-size: 15px; line-height: 1.75; color: #62728a; border-top: 1px solid #dce6f2; background: #fafbfd; }
+.feedback { padding: 0 25px; }
+.feedback:empty { display: none; }
+@media (max-width: 760px) {
+  .header, .job { padding: 18px 16px; }
+  .header h2 { font-size: 21px; }
+  .header p { font-size: 16px; }
+  .actions { align-items: stretch; }
+  .actions :is(button, a) { flex: 1 1 180px; text-align: center; }
+  .history > summary, .historyNote { padding: 15px 16px; }
+  .feedback { padding: 0 16px; }
+}

@@ -36,7 +36,7 @@ export type AnalysisJob = {
   updatedAt: string;
 };
 export type AnalysisRequest =
-  | { action: "preview"; batchId: string; batchRevision: string; groupIds: string[]; configVersion: string }
+  | { action: "preview"; batchId: string; batchRevision: string; groupIds: string[]; configVersion: string; limit?: 5 }
   | { action: "start"; confirmation: string; requestId: string }
   | { action: "get"; jobId: string }
   | { action: "list"; batchId: string }

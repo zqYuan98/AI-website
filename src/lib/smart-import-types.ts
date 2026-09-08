@@ -129,6 +129,8 @@ export type SmartImportBatch = {
 export type SmartImportFilters = {
   view?: SmartImportView;
   resultStatus?: SmartImportResultStatus;
+  /** Current retained suggestion origin across this batch, independently of any analysis job. */
+  suggestionSource?: "rule" | "model";
   search?: string;
   folder?: string;
   domain?: string;

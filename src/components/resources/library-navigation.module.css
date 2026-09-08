@@ -1,0 +1,11 @@
+.navigation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 32px; background: #f8faff; border-bottom: 1px solid #e0e6ee; }
+.navigation a { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid transparent; border-radius: 7px; color: #4d6079; font-size: 16px; font-weight: 550; line-height: 1.5; text-align: center; text-decoration: none; }
+.navigation svg { width: 18px; height: 18px; flex-shrink: 0; }
+.navigation a:hover { background: #edf3ff; color: #285dca; }
+.navigation a[aria-current="page"] { background: #fff; border-color: #ccd9ef; color: #285dca; }
+.navigation a:focus-visible { outline: 3px solid #9cbbfb; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .navigation { gap: 4px; padding: 8px 12px; }
+  .navigation a { padding: 8px 4px; font-size: 14px; }
+  .navigation svg { display: none; }
+}

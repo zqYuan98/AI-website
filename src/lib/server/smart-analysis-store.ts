@@ -3,6 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { LibraryConnection, LibraryPool } from "@/lib/cloud-library";
 import { LibraryInputError, libraryObject } from "@/lib/library-domain";
+import { SmartApiCallError, type SmartApiAccessRestriction, type SmartApiResponseType } from "./smart-api-client";
 import type { AnalysisDestination, AnalysisJob, AnalysisPreview, AnalysisStatus } from "@/lib/smart-analysis-types";
 import type { ApiConfigView, ApiSettings, ModelSuggestion, ModelUsage } from "@/lib/smart-api-types";
 import type { SmartImportAnalysisCapture, SmartImportAnalysisTarget, SmartImportSuggestionResult, SmartImportSuggestionsApplied } from "@/lib/smart-import-types";
@@ -11,10 +12,12 @@ const MAX_CANDIDATES = 500;
 const PREVIEW_DNS_CHUNK = 20;
 const PREVIEW_DNS_BUDGET_MS = 20_000;
 type Target = SmartImportAnalysisTarget & { status: "pending" | "working" | "succeeded" | "ignored" | "failed"; requestId?: string };
+type FailureDiagnostic = { outcome: "unknown" | "rejected" | "invalid_response"; message: string; status?: number; upstreamStatus?: number; responseType?: SmartApiResponseType; accessRestriction?: SmartApiAccessRestriction };
 type JobState = {
   confirmation: string; config: AnalysisDestination; settings: ApiSettings; targets: Target[]; status: AnalysisStatus;
   requests: number; reservedCost: number | null; possibleCharge: boolean; message: string | null;
   usage: { inputTokens: number; outputTokens: number } | null;
+  lastFailure?: FailureDiagnostic;
 };
 type StoredPreview = AnalysisPreview & { settings: ApiSettings };
 type JobRow = { id: string; ownerId: string; batchId: string; revision: string; state: JobState; createdAt: string; updatedAt: string };
@@ -55,6 +58,23 @@ function enabledConfig(config: ApiConfigView, version: unknown) {
     throw new LibraryInputError("模型配置已变化或尚未启用，请先保存并测试配置，再重新预览发送范围。", 409);
   }
 }
+function failureDiagnostic(error: unknown, sent: boolean): FailureDiagnostic {
+  const fallback = sent ? "这组分析没有获得可用结果，可能已计费。已完成部分已保存，失败项不会自动重复发送。" : "发送前检查未通过，未发送的内容已保留。请核对批次或模型配置后继续。";
+  if (!(error instanceof SmartApiCallError)) return { outcome: "unknown", message: fallback };
+  // This class is constructed with application-owned messages. Never copy an arbitrary exception or its properties.
+  const outcome = error.outcome === "rejected" || error.outcome === "invalid_response" ? error.outcome : "unknown";
+  const result: FailureDiagnostic = { outcome, message: error.message };
+  if (Number.isInteger(error.status) && error.status >= 100 && error.status <= 599) result.status = error.status;
+  if (error.upstreamStatus !== undefined && Number.isInteger(error.upstreamStatus) && error.upstreamStatus >= 100 && error.upstreamStatus <= 599) result.upstreamStatus = error.upstreamStatus;
+  if (error.responseType === "json" || error.responseType === "html" || error.responseType === "other") result.responseType = error.responseType;
+  if (error.accessRestriction === "browser_challenge") result.accessRestriction = error.accessRestriction;
+  return result;
+}
+function failureMessage(failure: FailureDiagnostic, sent: boolean): string {
+  if (!sent) return `发送前检查未完成，未发送的内容已保留。${failure.message}`;
+  const prefix = failure.outcome === "rejected" ? "模型服务拒绝了本次请求。" : failure.outcome === "invalid_response" ? "响应未通过兼容性或完整性检查。" : "本次请求结果未知，可能已计费。";
+  return `${prefix}${failure.message}已完成部分会保留，本次不会自动重试。`;
+}
 /** A deliberately conservative byte-based token estimate, not a provider billing promise. */
 export function estimateAnalysisCost(settings: ApiSettings, targets: Pick<SmartImportAnalysisTarget, "id" | "title" | "domain">[]): number | null {
   if (settings.inputPricePerMillion === null || settings.outputPricePerMillion === null) return null;
@@ -92,16 +112,33 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
     job.revision = String(result.rows[0].revision);
     job.updatedAt = iso(result.rows[0].updated_at);
   }
+  async function assertNoOverlappingWork(client: LibraryConnection, ownerId: string, batchId: string, targetIds: string[], exceptJobId: string | null = null) {
+    const selected = new Set(targetIds);
+    if (!selected.size) return;
+    // Both start and resume hold the owner lock, so concurrent browser actions cannot approve duplicate work.
+    const activeJobs = await client.query("SELECT state FROM library_private.analysis_jobs WHERE owner_id=$1 AND batch_id=$2 AND ($3::text IS NULL OR id<>$3) AND state->>'status' IN ('queued','running')", [ownerId, batchId, exceptJobId]);
+    if (activeJobs.rows.some(record => (record.state as JobState).targets.some(target => selected.has(target.id) && (target.status === "pending" || target.status === "working")))) {
+      throw new LibraryInputError("所选条目已有正在执行的分析任务，请查看该任务进度。", 409);
+    }
+    // Pausing or cancelling cannot recall an in-flight request. Expired leases follow the existing recovery rules.
+    const requests = await client.query("SELECT request.target_ids FROM library_private.analysis_requests AS request JOIN library_private.analysis_jobs AS job ON job.id=request.job_id WHERE request.owner_id=$1 AND job.owner_id=$1 AND job.batch_id=$2 AND ($3::text IS NULL OR job.id<>$3) AND request.status IN ('reserved','sent') AND request.lease_until > now()", [ownerId, batchId, exceptJobId]);
+    if (requests.rows.some(record => (record.target_ids as string[]).some(id => selected.has(id)))) {
+      throw new LibraryInputError("所选条目仍有未确认结果的请求，请先等待原任务结束或核对原任务状态，再重新操作。", 409);
+    }
+  }
   async function preview(input: Record<string, unknown>, ownerId: string): Promise<AnalysisPreview> {
     authorize(ownerId);
     const batchId = requiredText(input.batchId, "批次");
     const batchRevision = requiredText(input.batchRevision, "批次版本");
     if (!Array.isArray(input.groupIds) || !input.groupIds.length || input.groupIds.length > 5000) throw new LibraryInputError("请明确选择本批需要分析的条目。");
+    if (input.limit !== undefined && input.limit !== 5) throw new LibraryInputError("小范围体验只支持最多 5 个资源；完整分析请省略此限制。");
     const groupIds = [...new Set(input.groupIds.map(id => requiredText(id, "候选")))];
     const config = await deps.readConfig(ownerId);
     enabledConfig(config, input.configVersion);
     const capture = await deps.capture({ batchId, batchRevision, groupIds }, ownerId);
-    const maximum = Math.min(MAX_CANDIDATES, config.settings.batchSize * config.settings.maxRequests);
+    const previewLimit = input.limit === 5 ? 5 : MAX_CANDIDATES;
+    const maximum = Math.min(previewLimit, config.settings.batchSize * config.settings.maxRequests);
+    const scopeLimitReason = input.limit === 5 && maximum === 5 ? "本次先试最多 5 个资源，剩余资源尚未发送，可之后继续整理。" : "超过本次分析条数或请求数限制，可下次继续。";
     const targets: SmartImportAnalysisTarget[] = [], excluded = [...capture.excluded];
     // Filter before filling the send limit. A private/unknown prefix must not consume all 500 slots.
     // Cache only within this preview; start and transport still recheck DNS independently.
@@ -117,13 +154,13 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
       }
       for (const target of chunk) {
         cursor++;
-        if (targets.length >= maximum) { excluded.push({ id: target.id, reason: "超过本次分析条数或请求数限制，可下次继续。" }); continue; }
+        if (targets.length >= maximum) { excluded.push({ id: target.id, reason: scopeLimitReason }); continue; }
         const reason = domains.get(target.domain);
         if (reason) excluded.push({ id: target.id, reason });
         else targets.push(target);
       }
     }
-    const remainingReason = targets.length >= maximum ? "超过本次分析条数或请求数限制，可下次继续。" : "本轮域名检查已达到时间上限，尚未检查的条目可下次继续。";
+    const remainingReason = targets.length >= maximum ? scopeLimitReason : "本轮域名检查已达到时间上限，尚未检查的条目可下次继续。";
     excluded.push(...capture.targets.slice(cursor).map(target => ({ id: target.id, reason: remainingReason })));
     if (!targets.length) throw new LibraryInputError(cursor < capture.targets.length ? "本轮域名检查已达到时间上限，尚有条目未检查，请选择较小范围后继续。" : "所选条目没有适合发送到外部模型的内容，可继续手工整理。");
     let estimatedCost: number | null = 0;
@@ -135,7 +172,7 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
     const result: AnalysisPreview = {
       confirmation: randomUUID(), expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(), batchId, batchRevision: capture.batchRevision,
       config: destination(config), targets, excluded,
-      limits: { batchSize: config.settings.batchSize, maxRequests: config.settings.maxRequests, concurrency: config.settings.concurrency, maxOutputTokens: config.settings.maxOutputTokens, maxCandidates: MAX_CANDIDATES },
+      limits: { batchSize: config.settings.batchSize, maxRequests: config.settings.maxRequests, concurrency: config.settings.concurrency, maxOutputTokens: config.settings.maxOutputTokens, maxCandidates: previewLimit },
       estimatedRequests: Math.ceil(targets.length / config.settings.batchSize), estimatedCost, estimatedBudget: config.settings.estimatedBudget,
     };
     await pool.query("DELETE FROM library_private.analysis_previews WHERE owner_id=$1 AND expires_at < now()", [ownerId]);
@@ -170,11 +207,7 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
         return { job: view(previous) };
       }
       await deps.assertConfig(client, ownerId, saved.config.version);
-      const overlapping = await client.query("SELECT state FROM library_private.analysis_jobs WHERE owner_id=$1 AND batch_id=$2 AND state->>'status' IN ('queued','running')", [ownerId, saved.batchId]);
-      const selected = new Set(saved.targets.map(t => t.id));
-      if (overlapping.rows.some(r => (r.state as JobState).targets.some(t => selected.has(t.id) && (t.status === "pending" || t.status === "working")))) {
-        throw new LibraryInputError("所选条目已有正在执行的分析任务，请查看该任务进度。", 409);
-      }
+      await assertNoOverlappingWork(client, ownerId, saved.batchId, saved.targets.map(target => target.id));
       const state: JobState = { confirmation, config: saved.config, settings: saved.settings, targets: saved.targets.map(t => ({ ...t, status: "pending" })), status: "queued", requests: 0, reservedCost: saved.estimatedCost === null ? null : 0, possibleCharge: false, message: null, usage: null };
       const result = await client.query("INSERT INTO library_private.analysis_jobs(id,owner_id,batch_id,request_id,state) VALUES($1,$2,$3,$4,$5::jsonb) RETURNING *,revision::text AS revision", [randomUUID(), ownerId, saved.batchId, requestId, JSON.stringify(state)]);
       return { job: view(row(result.rows[0])) };
@@ -197,9 +230,12 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
       if (input.action === "resume") {
         if (config) enabledConfig(config, job.state.config.version);
         if (job.state.status === "cancelled" || job.state.status === "completed") throw new LibraryInputError("任务已结束，可在工作区重新选择待处理条目。");
+        const resumed = job.state.targets.filter(target => target.status === "pending" || target.status === "working" || (input.retryFailed === true && target.status === "failed"));
+        await assertNoOverlappingWork(client, ownerId, job.batchId, resumed.map(target => target.id), job.id);
         if (input.retryFailed === true) for (const target of job.state.targets) if (target.status === "failed") target.status = "pending";
         job.state.status = "queued";
         job.state.message = null;
+        delete job.state.lastFailure;
       } else if (input.action === "pause") {
         if (job.state.status !== "completed" && job.state.status !== "cancelled") job.state.status = "paused";
       } else if (input.action === "cancel") job.state.status = "cancelled";
@@ -294,7 +330,7 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
   }
   async function settle(jobId: string, requestId: string, ownerId: string, result: {
     disposition: "succeeded" | "failed" | "cancelled";
-    appliedIds?: string[]; ignoredIds?: string[]; usage?: ModelUsage | null; message?: string; pause?: boolean;
+    appliedIds?: string[]; ignoredIds?: string[]; usage?: ModelUsage | null; message?: string; pause?: boolean; failure?: FailureDiagnostic;
   }) {
     return transaction(async client => {
       await lockOwner(client, ownerId);
@@ -320,6 +356,7 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
       }
       if (result.pause && job.state.status !== "cancelled") job.state.status = "paused";
       if (result.message) job.state.message = result.message;
+      if (result.failure) job.state.lastFailure = result.failure;
       if (result.usage?.inputTokens !== null && result.usage?.inputTokens !== undefined && result.usage.outputTokens !== null) {
         job.state.usage ??= { inputTokens: 0, outputTokens: 0 };
         job.state.usage.inputTokens += result.usage.inputTokens;
@@ -368,11 +405,12 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
         appliedIds = applied.appliedIds;
       }
       return await settle(jobId, claim.requestId, ownerId, { disposition: "succeeded", appliedIds, ignoredIds, usage: result.usage });
-    } catch {
+    } catch (error) {
+      const failure = failureDiagnostic(error, sent);
       try {
         return await settle(jobId, claim.requestId, ownerId, sent
-          ? { disposition: "failed", message: "这组分析没有获得可用结果，可能已计费。已完成部分已保存，失败项不会自动重复发送。" }
-          : { disposition: "cancelled", pause: true, message: "发送前检查未通过，未发送的内容已保留。请核对批次或模型配置后继续。" });
+          ? { disposition: "failed", message: failureMessage(failure, sent), failure }
+          : { disposition: "cancelled", pause: true, message: failureMessage(failure, sent), failure });
       } catch { throw new Error("Analysis outcome awaits recovery; no automatic model retry was performed."); }
     }
   }

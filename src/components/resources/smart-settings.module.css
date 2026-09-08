@@ -1,0 +1,53 @@
+.page { max-width: 900px; padding-bottom: 132px; }
+.heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 23px; }
+.heading h1 { color: #183451; margin: 0 0 8px; font-size: 30px; line-height: 1.35; letter-spacing: -.5px; font-weight: 650; }
+.heading p { color: #7689a1; margin: 0; font-size: 16px; line-height: 1.75; }
+.back { display: inline-flex; align-items: center; min-height: 44px; gap: 7px; color: #617c9e; text-decoration: none; font-size: 14px; white-space: nowrap; }
+.back:hover { color: #285dca; }
+.status { display: flex; align-items: flex-start; gap: 14px; padding: 19px 21px; margin-bottom: 19px; border: 1px solid #d6e2f4; background: #f2f6fd; border-radius: 10px; }
+.statusMark { display: grid; place-items: center; flex-shrink: 0; width: 35px; height: 35px; color: #3d6fbe; border: 1px solid #d6e2f4; border-radius: 8px; background: #fff; font-size: 23px; }
+.status h2 { font-size: 19px; color: #294e80; margin: 1px 0 6px; line-height: 1.6; font-weight: 600; }
+.status p { margin: 0; color: #6f85a3; font-size: 14px; line-height: 1.8; }
+.statusReady { border-color: #cfdfd7; background: #f2f8f4; }
+.statusReady h2, .statusReady .statusMark { color: #447057; }
+.statusReady .statusMark { border-color: #d4e5da; }
+.statusReady p { color: #708c7c; }
+.statusIssue { border-color: #e8dcce; background: #faf7f1; }
+.statusIssue h2 { color: #8c6f47; }
+.form { max-width: none; }
+.form :is(input, select) { font-size: 16px; min-height: 46px; }
+.form label { min-width: 0; }
+.form .fieldHelp { font-size: 14px; color: #788ba4; line-height: 1.8; margin: -8px 0 0; }
+.form .connectionFields { gap: 18px; padding-top: 22px; }
+.sectionTitle h2 { font-size: 20px; color: #294969; margin: 0 0 6px; font-weight: 600; }
+.sectionTitle p { font-size: 14px; color: #7e8fa5; margin: 0; line-height: 1.8; }
+.maintenance { border-top: 1px solid #e0e7f0; padding: 8px 0 0; margin-top: 3px; }
+.maintenance > summary { min-height: 48px; padding: 12px 0; font-size: 14px; color: #7085a0; cursor: pointer; }
+.maintenanceBody { padding: 4px 0 16px; }
+.maintenanceBody p { font-size: 14px; color: #7d8da2; line-height: 1.8; margin: 5px 0 12px; }
+.maintenanceActions { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 20px; }
+.savedAt { font-size: 14px; color: #91a0b1; margin: 17px 0 0; line-height: 1.8; }
+.nextAction { position: fixed; z-index: 5; inset: auto 0 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px max(28px, calc((100vw - 1120px) / 2)); background: #fffffff5; backdrop-filter: blur(12px); border-top: 1px solid #dbe5f3; box-shadow: 0 -6px 28px #26457408; }
+.nextAction > div { display: grid; gap: 3px; }
+.nextAction strong { font-size: 16px; color: #35557d; font-weight: 550; }
+.nextAction span { font-size: 14px; color: #8597ae; }
+.nextAction > :is(button, a) { min-width: 245px; min-height: 48px; font-size: 16px; text-align: center; }
+.nextAction :is(button, a):focus-visible, .back:focus-visible { outline: 3px solid #90b5f7; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .page { padding-bottom: 128px; }
+  .heading { display: block; margin-bottom: 15px; }
+  .heading h1 { font-size: 26px; margin-bottom: 5px; }
+  .heading p { font-size: 16px; }
+  .back { margin-top: 4px; }
+  .status { padding: 14px; gap: 10px; margin-bottom: 15px; }
+  .statusMark { width: 29px; height: 31px; font-size: 20px; }
+  .status h2 { font-size: 17px; margin: 0 0 4px; }
+  .status p { font-size: 14px; }
+  .form .connectionFields { gap: 16px; padding-top: 19px; }
+  .sectionTitle h2 { font-size: 18px; }
+  .maintenanceActions { gap: 4px 16px; }
+  .nextAction { display: block; padding: 11px 16px max(14px, env(safe-area-inset-bottom)); }
+  .nextAction > div { display: flex; justify-content: space-between; gap: 3px 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .nextAction strong, .nextAction span { font-size: 14px; }
+  .nextAction > :is(button, a) { min-width: 0; width: 100%; min-height: 48px; font-size: 16px; }
+}
