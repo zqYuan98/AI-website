@@ -51,6 +51,10 @@ function transportFixture(payload = response, code = 200, headers = {}) {
       assert.equal(options.servername, 'models.example.com');
       assert.equal(options.agent, false);
       assert.equal(options.rejectUnauthorized, true);
+      assert.equal(options.method, 'POST');
+      assert.equal(options.path, '/v1/chat/completions');
+      assert.equal(options.headers.Authorization, `Bearer ${secret}`);
+      assert.equal(options.headers['Content-Type'], 'application/json');
       options.lookup('models.example.com', {}, (error, address, family) => {
         assert.equal(error, null); assert.equal(address, '8.8.8.8'); assert.equal(family, 4);
       });
@@ -86,6 +90,37 @@ await assert.rejects(() => client.postChatCompletion(config, [item], { ...transp
 assert.equal(networkCalls, beforeGuard, 'An expired durable lease cannot start transport after DNS resolution');
 await assert.rejects(() => client.postChatCompletion(config, [item], transportFixture(null, 302, { location: 'https://attacker.example' })), status(502));
 await assert.rejects(() => client.postChatCompletion(config, [item], transportFixture(`PROVIDER-SECRET-${secret}`, 401)), error => error.status === 502 && !error.message.includes(secret));
+for (const [code, contentType, expectedType] of [
+  [401, 'application/json; charset=utf-8', 'json'],
+  [401, 'text/html', 'html'],
+  [403, 'Text/HTML; charset=UTF-8', 'html'],
+  [403, 'application/xhtml+xml', 'html'],
+  [403, 'application/problem+json', 'json'],
+  [403, undefined, 'other'],
+  [403, `application/octet-stream; secret=${secret}`, 'other'],
+]) {
+  const beforeRejected = networkCalls;
+  await assert.rejects(() => client.postChatCompletion(config, [item], transportFixture(`UNTRUSTED-BODY-${secret}`, code,
+    { 'content-type': contentType, 'x-provider-secret': secret, 'set-cookie': `credential=${secret}` })), error => {
+    assert(error instanceof client.SmartApiCallError);
+    assert.equal(error.status, 502, 'The private API keeps its existing gateway-failure status.');
+    assert.equal(error.outcome, 'rejected');
+    assert.equal(error.upstreamStatus, code);
+    assert.equal(error.responseType, expectedType);
+    assert(error.message.includes(`HTTP ${code}`));
+    assert(!JSON.stringify({ ...error, message: error.message }).includes(secret));
+    assert(!error.message.includes('UNTRUSTED-BODY'));
+    if (code === 401) assert(error.message.includes('认证未通过'));
+    if (code === 403) {
+      assert(error.message.includes('拒绝访问'));
+      assert(!error.message.includes('Key'));
+      assert(!error.message.includes('拒绝鉴权'));
+      if (expectedType === 'html') assert(error.message.includes('HTML') && error.message.includes('可能'));
+    }
+    return true;
+  });
+  assert.equal(networkCalls, beforeRejected + 1, 'A provider rejection is never retried automatically.');
+}
 for (const changed of [{ id: 'unknown' }, { category: 'invented-category' }, { kind: 'unknown' }, { description: 'x'.repeat(1001) }]) {
   const invalid = { choices: [{ message: { content: JSON.stringify({ suggestions: [{ ...suggestion, ...changed }] }) } }] };
   await assert.rejects(() => client.postChatCompletion(config, [item], transportFixture(invalid)), status(502));

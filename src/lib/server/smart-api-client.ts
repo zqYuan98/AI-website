@@ -20,13 +20,22 @@ export type TransportDependencies = {
 export const SMART_API_MAX_INPUT_BYTES = 64 * 1024;
 export const SMART_API_MAX_RESPONSE_BYTES = 256 * 1024;
 export const SMART_API_REQUEST_TIMEOUT_MS = 30_000;
+export type SmartApiResponseType = "json" | "html" | "other";
 
 /** Safe metadata only; never attach the original exception, body, URL or Authorization header. */
 export class SmartApiCallError extends LibraryInputError {
-  constructor(message: string, public outcome: "unknown" | "rejected" | "invalid_response", status = 502) {
+  constructor(message: string, public outcome: "unknown" | "rejected" | "invalid_response", status = 502,
+    public readonly upstreamStatus?: number, public readonly responseType?: SmartApiResponseType) {
     super(message, status);
     this.name = "SmartApiCallError";
   }
+}
+
+function classifyResponseType(value: unknown): SmartApiResponseType {
+  const mime = typeof value === "string" ? value.split(";", 1)[0].trim().toLowerCase() : "";
+  if (mime === "application/json" || /^application\/[a-z0-9!#$&^_.+-]+\+json$/.test(mime)) return "json";
+  if (mime === "text/html" || mime === "application/xhtml+xml") return "html";
+  return "other";
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -124,11 +133,17 @@ export async function postChatCompletion(config: ResolvedApiConfig, input: Appro
       const request = (deps.request ?? httpsRequest)(options, incoming => {
         if (settled) { incoming.destroy(); return; }
         const code = incoming.statusCode ?? 0;
-        if (code < 200 || code >= 300) {
-          const text = code >= 300 && code < 400 ? "模型服务返回重定向，已停止请求，请直接填写最终 API 地址。"
-            : code === 401 || code === 403 ? "模型服务拒绝鉴权，请检查 Key、模型权限和服务地址。"
-            : code === 429 ? "模型服务暂时限流或额度不足，请稍后手动重试。" : "模型服务暂时未能完成请求。";
-          fail(new SmartApiCallError(text, "rejected"));
+        if (!Number.isInteger(code) || code < 200 || code >= 300) {
+          const upstreamStatus = Number.isInteger(code) && code >= 100 && code <= 599 ? code : undefined;
+          const responseType = classifyResponseType(incoming.headers["content-type"]);
+          const detail = `${upstreamStatus === undefined ? "未知 HTTP 状态" : `HTTP ${upstreamStatus}`}，${responseType === "json" ? "JSON" : responseType === "html" ? "HTML" : "其他类型"}响应`;
+          const text = code >= 300 && code < 400 ? `模型服务返回重定向（${detail}），已停止请求，请直接填写最终 API 地址。`
+            : code === 401 ? `模型服务认证未通过（${detail}），请核对 Key、认证方式和服务地址。`
+            : code === 403 ? responseType === "html"
+              ? `模型服务拒绝访问（${detail}），可能是服务网关或防火墙拦截，请核对来源网络与访问规则。`
+              : `模型服务拒绝访问（${detail}），请核对模型权限、来源网络和服务访问规则。`
+            : code === 429 ? `模型服务暂时限流或额度不足（${detail}），请稍后手动重试。` : `模型服务暂时未能完成请求（${detail}）。`;
+          fail(new SmartApiCallError(text, "rejected", 502, upstreamStatus, responseType));
           incoming.destroy();
           return;
         }
