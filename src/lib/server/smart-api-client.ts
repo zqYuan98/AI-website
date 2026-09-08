@@ -21,11 +21,13 @@ export const SMART_API_MAX_INPUT_BYTES = 64 * 1024;
 export const SMART_API_MAX_RESPONSE_BYTES = 256 * 1024;
 export const SMART_API_REQUEST_TIMEOUT_MS = 30_000;
 export type SmartApiResponseType = "json" | "html" | "other";
+export type SmartApiAccessRestriction = "browser_challenge";
 
 /** Safe metadata only; never attach the original exception, body, URL or Authorization header. */
 export class SmartApiCallError extends LibraryInputError {
   constructor(message: string, public outcome: "unknown" | "rejected" | "invalid_response", status = 502,
-    public readonly upstreamStatus?: number, public readonly responseType?: SmartApiResponseType) {
+    public readonly upstreamStatus?: number, public readonly responseType?: SmartApiResponseType,
+    public readonly accessRestriction?: SmartApiAccessRestriction) {
     super(message, status);
     this.name = "SmartApiCallError";
   }
@@ -127,7 +129,7 @@ export async function postChatCompletion(config: ResolvedApiConfig, input: Appro
         ? callback(null, [{ address: target.address, family: target.family }])
         : callback(null, target.address, target.family),
       maxHeaderSize: 16 * 1024,
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json", "Accept-Encoding": "identity", "Content-Length": Buffer.byteLength(body) },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json", "Accept-Encoding": "identity", "Content-Length": Buffer.byteLength(body), "User-Agent": "Vitamin-Resource-Library/1.0" },
     };
     try {
       const request = (deps.request ?? httpsRequest)(options, incoming => {
@@ -136,14 +138,16 @@ export async function postChatCompletion(config: ResolvedApiConfig, input: Appro
         if (!Number.isInteger(code) || code < 200 || code >= 300) {
           const upstreamStatus = Number.isInteger(code) && code >= 100 && code <= 599 ? code : undefined;
           const responseType = classifyResponseType(incoming.headers["content-type"]);
+          const accessRestriction = code === 403 && incoming.headers["cf-mitigated"] === "challenge" ? "browser_challenge" : undefined;
           const detail = `${upstreamStatus === undefined ? "未知 HTTP 状态" : `HTTP ${upstreamStatus}`}，${responseType === "json" ? "JSON" : responseType === "html" ? "HTML" : "其他类型"}响应`;
           const text = code >= 300 && code < 400 ? `模型服务返回重定向（${detail}），已停止请求，请直接填写最终 API 地址。`
             : code === 401 ? `模型服务认证未通过（${detail}），请核对 Key、认证方式和服务地址。`
+            : accessRestriction === "browser_challenge" ? `网关要求浏览器验证（${detail}），服务器 API 请求无法完成，请联系服务方放行 API 访问。`
             : code === 403 ? responseType === "html"
               ? `模型服务拒绝访问（${detail}），可能是服务网关或防火墙拦截，请核对来源网络与访问规则。`
               : `模型服务拒绝访问（${detail}），请核对模型权限、来源网络和服务访问规则。`
             : code === 429 ? `模型服务暂时限流或额度不足（${detail}），请稍后手动重试。` : `模型服务暂时未能完成请求（${detail}）。`;
-          fail(new SmartApiCallError(text, "rejected", 502, upstreamStatus, responseType));
+          fail(new SmartApiCallError(text, "rejected", 502, upstreamStatus, responseType, accessRestriction));
           incoming.destroy();
           return;
         }

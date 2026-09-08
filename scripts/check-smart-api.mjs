@@ -55,6 +55,7 @@ function transportFixture(payload = response, code = 200, headers = {}) {
       assert.equal(options.path, '/v1/chat/completions');
       assert.equal(options.headers.Authorization, `Bearer ${secret}`);
       assert.equal(options.headers['Content-Type'], 'application/json');
+      assert.equal(options.headers['User-Agent'], 'Vitamin-Resource-Library/1.0');
       options.lookup('models.example.com', {}, (error, address, family) => {
         assert.equal(error, null); assert.equal(address, '8.8.8.8'); assert.equal(family, 4);
       });
@@ -120,6 +121,28 @@ for (const [code, contentType, expectedType] of [
     return true;
   });
   assert.equal(networkCalls, beforeRejected + 1, 'A provider rejection is never retried automatically.');
+}
+for (const [code, marker, challenged] of [
+  [403, 'challenge', true],
+  [403, 'Challenge', false],
+  [403, ' challenge ', false],
+  [403, ['challenge'], false],
+  [403, `challenge-${secret}`, false],
+  [401, 'challenge', false],
+]) {
+  const beforeChallenge = networkCalls;
+  await assert.rejects(() => client.postChatCompletion(config, [item], transportFixture(`CHALLENGE-PAGE-${secret}`, code,
+    { 'content-type': 'text/html', 'cf-mitigated': marker, 'set-cookie': `session=${secret}` })), error => {
+    assert.equal(error.upstreamStatus, code);
+    assert.equal(error.responseType, 'html');
+    assert.equal(error.accessRestriction, challenged ? 'browser_challenge' : undefined);
+    assert.equal(error.message.includes('网关要求浏览器验证'), challenged, 'Only an exact 403 challenge marker is recognized.');
+    if (challenged) assert(error.message.includes('服务器 API 请求无法完成') && error.message.includes('联系服务方'));
+    assert(!JSON.stringify({ ...error, message: error.message }).includes(secret));
+    assert(!error.message.includes('CHALLENGE-PAGE'));
+    return true;
+  });
+  assert.equal(networkCalls, beforeChallenge + 1, 'Browser challenges are not solved or retried by this API client.');
 }
 for (const changed of [{ id: 'unknown' }, { category: 'invented-category' }, { kind: 'unknown' }, { description: 'x'.repeat(1001) }]) {
   const invalid = { choices: [{ message: { content: JSON.stringify({ suggestions: [{ ...suggestion, ...changed }] }) } }] };
