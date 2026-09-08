@@ -20,17 +20,20 @@ export function PublicResourceCard({ resource, onDetails, layout = "grid", featu
         <div className={styles.cardCopy}>
           <div className={styles.cardTitle}>
             <h3><a href={resource.url} target="_blank" rel="noopener noreferrer">{resource.name}<span className={styles.srOnly}>（在新标签页打开）</span></a></h3>
-            <span className={styles.kindLabel}>{RESOURCE_KIND_LABELS[resource.kind]}</span>
           </div>
-          <p className={styles.description}>{resource.description || `${resource.subcategory || resource.category}相关${RESOURCE_KIND_LABELS[resource.kind]}。`}</p>
+          <div className={styles.cardMeta}>
+            <span className={styles.kindLabel}>{RESOURCE_KIND_LABELS[resource.kind]}</span>
+            <span aria-hidden="true">·</span><span>{resource.subcategory || resource.category}</span>
+            {!featured && resource.featured ? <span className={styles.featuredLabel}>精选</span> : null}
+          </div>
         </div>
         <a href={resource.url} target="_blank" rel="noopener noreferrer" className={styles.externalLink} aria-label={`打开 ${resource.name}（新标签页）`}><span aria-hidden="true">↗</span></a>
       </div>
-      <div className={styles.cardFooter}>
+      <div className={styles.cardBody}>
+        <p className={styles.description}>{resource.description || `${resource.subcategory || resource.category}相关${RESOURCE_KIND_LABELS[resource.kind]}。`}</p>
         {resource.recommendation.trim() ? (
-          <button className={styles.detailLink} onClick={() => onDetails(resource)} aria-label={`为什么推荐 ${resource.name}`}>为什么推荐 <span aria-hidden="true">→</span></button>
-        ) : <span className={styles.cardMeta}>{resource.subcategory || resource.category}</span>}
-        {!featured && resource.featured ? <span className={styles.featuredLabel}>精选</span> : null}
+          <button type="button" className={styles.detailLink} onClick={() => onDetails(resource)} aria-label={`为什么推荐 ${resource.name}`}>推荐理由</button>
+        ) : null}
       </div>
     </article>
   );
