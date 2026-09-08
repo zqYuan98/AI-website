@@ -2,10 +2,10 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { getDatabasePool } from "./database";
 import type { LibraryConnection, LibraryPool } from "../cloud-library";
-import { LibraryInputError, MAX_RESOURCES, MAX_STORE_BYTES, normalizeLibraryState, normalizePublicSnapshot } from "../library-domain";
+import { applyLibraryAction, LibraryInputError, MAX_RESOURCES, MAX_STORE_BYTES, normalizeLibraryState, normalizePublicSnapshot } from "../library-domain";
 import { canonicalBookmarkUrl } from "../bookmark-import";
 import { publicModelDomain } from "./smart-api-security";
-import { checkedImportFields, editImportSource, filteredImportGroups, importFacets, importGroupDto, importHash, importIds, importJsonbBytes, importRecord, importRelationshipHash, importResult, importSummary, importText, parseImportSources, projectImportAcceptance, regroupImportSources, sourceDto, type ImportGroupRecord, type ImportSourceRecord } from "../smart-import-domain";
+import { checkedImportFields, editImportSource, filteredImportGroups, importCollectionLookup, importFacets, importGroupDto, importHash, importIds, importJsonbBytes, importRecord, importRelationshipHash, importResult, importSummary, importText, parseImportSources, projectImportAcceptance, regroupImportSources, sourceDto, type ImportGroupRecord, type ImportSourceRecord } from "../smart-import-domain";
 import type { LibraryResource, LibraryState, PublicLibrarySnapshot } from "../resource-types";
 import type { SmartImportAnalysisCapture, SmartImportAnalysisTarget, SmartImportBatch, SmartImportBatchContext, SmartImportCommitItem, SmartImportFilters, SmartImportReceipt, SmartImportReceiptItem, SmartImportSuggestionMode, SmartImportSuggestionResult, SmartImportUndoItem } from "../smart-import-types";
 
@@ -21,7 +21,7 @@ function revision(value: unknown, actual: string) {
 function requestId(value: unknown) { const id = importText(value, 100, true); if (!/^[a-zA-Z0-9-]+$/.test(id)) throw new LibraryInputError("请求标识不正确。"); return id; }
 function pageNumber(value: unknown) { if (value === undefined) return 1; if (!Number.isSafeInteger(value) || Number(value) < 1 || Number(value) > 10000) throw new LibraryInputError("页码不正确。"); return Number(value); }
 function batchDto(context: Context): SmartImportBatch {
-  return { id: context.row.id, name: String(context.row.metadata.name), format: context.row.metadata.format as "html" | "lines", status: context.row.metadata.status as SmartImportBatch["status"], revision: context.row.revision, createdAt: iso(context.row.created_at), updatedAt: iso(context.row.updated_at), summary: importSummary(context.sources, context.groups) };
+  return { id: context.row.id, name: String(context.row.metadata.name), format: context.row.metadata.format as "html" | "lines", status: context.row.metadata.status as SmartImportBatch["status"], revision: context.row.revision, createdAt: iso(context.row.created_at), updatedAt: iso(context.row.updated_at), summary: importSummary(context.sources, context.groups, importCollectionLookup(context.state.resources, context.publication)) };
 }
 function response(context: Context): SmartImportBatchContext { return { batch: batchDto(context), batchRevision: context.row.revision, libraryRevision: context.libraryRevision }; }
 function active(context: Context) { if (["paused", "cancelled"].includes(String(context.row.metadata.status))) throw new LibraryInputError("本批次已暂停或取消，请先继续。", 409); }
@@ -38,7 +38,7 @@ function filters(value: unknown): SmartImportFilters {
   if (Object.keys(input).some(key => !["view", "resultStatus", "suggestionSource", "search", "folder", "domain", "kind", "category", "decision"].includes(key))) throw new LibraryInputError("筛选条件不正确。");
   for (const item of Object.values(input)) importText(item, 1000);
   if (input.view !== undefined && !["review", "suggested", "duplicates", "invalid", "excluded", "all"].includes(String(input.view))) throw new LibraryInputError("筛选视图不正确。");
-  if (input.resultStatus !== undefined && !["ready", "review", "skipped", "collected"].includes(String(input.resultStatus))) throw new LibraryInputError("整理结果筛选不正确。");
+  if (input.resultStatus !== undefined && !["ready", "review", "skipped", "collected", "removed"].includes(String(input.resultStatus))) throw new LibraryInputError("整理结果筛选不正确。");
   if (input.suggestionSource !== undefined && !["rule", "model"].includes(String(input.suggestionSource))) throw new LibraryInputError("建议来源筛选不正确。");
   return input as SmartImportFilters;
 }
@@ -65,8 +65,8 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
     if (!published) throw new LibraryInputError("公开快照尚未初始化。", 503);
     return { state: normalizeLibraryState(row.state), publication: normalizePublicSnapshot(published.snapshot), libraryRevision: String(row.revision) };
   }
-  async function load(client: LibraryConnection, ownerId: string, batchId: unknown): Promise<Context> {
-    const current = await library(client, ownerId);
+  async function load(client: LibraryConnection, ownerId: string, batchId: unknown, current?: Awaited<ReturnType<typeof library>>): Promise<Context> {
+    current ??= await library(client, ownerId);
     const row = (await client.query("SELECT id,owner_id,revision::text AS revision,metadata,created_at,updated_at FROM library_private.import_batches WHERE id=$1 AND owner_id=$2 FOR UPDATE", [importText(batchId, 100, true), ownerId])).rows[0] as BatchRow | undefined;
     if (!row) throw new LibraryInputError("导入批次不存在。", 404);
     const sourceRows = (await client.query("SELECT data FROM library_private.import_sources WHERE batch_id=$1 ORDER BY ordinal", [row.id])).rows;
@@ -167,12 +167,10 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
         const page = pageNumber(input.page);
         const rows = (await client.query("SELECT id,revision::text AS revision,metadata,created_at,updated_at,count(*) OVER()::int AS total FROM library_private.import_batches WHERE owner_id=$1 ORDER BY created_at DESC,id LIMIT 20 OFFSET $2", [ownerId, (page - 1) * 20])).rows;
         const batches = [];
+        const current = rows.length ? await library(client, ownerId) : undefined;
         for (const row of rows) {
-          const metadata = row.metadata as { summary?: Partial<SmartImportBatch["summary"]> };
-          // Older batches predate result counts. Upgrade their DTO by projection, never by a read-time write.
-          if (!metadata.summary?.resultCounts || metadata.summary.skippedSources === undefined) {
-            const context = await load(client, ownerId, row.id); regroup(context); batches.push(batchDto(context));
-          } else batches.push({ id: row.id, revision: row.revision, ...row.metadata as object, createdAt: iso(row.created_at as Date), updatedAt: iso(row.updated_at as Date) });
+          // Read the shared draft once, and project each page's batches sequentially without caching live state as history.
+          const context = await load(client, ownerId, row.id, current); regroup(context); batches.push(batchDto(context));
         }
         return { batches, page, pageSize: 20, total: Number(rows[0]?.total ?? 0) };
       }
@@ -194,25 +192,26 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
       if (input.action === "get") {
         // Match projections are reads: repeated/aborted UI fetches must not advance a batch revision.
         regroup(context);
-        const selectedFilters = filters(input.filters), page = pageNumber(input.page), selected = filteredImportGroups(context.groups, selectedFilters);
+        const collection = importCollectionLookup(context.state.resources, context.publication);
+        const selectedFilters = filters(input.filters), page = pageNumber(input.page), selected = filteredImportGroups(context.groups, selectedFilters, collection);
         const sourceView = selectedFilters.view === "invalid" || selectedFilters.view === "excluded";
         // Invalid/excluded origins have no active group suggestion to match a source filter.
         const invalid = selectedFilters.suggestionSource ? [] : context.sources.filter(source => selectedFilters.view === "excluded" ? source.excluded : source.invalidReason && !source.excluded);
-        return { ...response(context), groups: selected.slice((page - 1) * 50, page * 50).map(importGroupDto), invalidSources: sourceView ? invalid.slice((page - 1) * 50, page * 50).map(sourceDto) : [], page, pageSize: 50, total: sourceView ? invalid.length : selected.length, facets: importFacets(context.sources, context.groups, Boolean(selectedFilters.resultStatus || selectedFilters.suggestionSource)) };
+        return { ...response(context), groups: selected.slice((page - 1) * 50, page * 50).map(group => importGroupDto(group, collection(group))), invalidSources: sourceView ? invalid.slice((page - 1) * 50, page * 50).map(sourceDto) : [], page, pageSize: 50, total: sourceView ? invalid.length : selected.length, facets: importFacets(context.sources, context.groups, Boolean(selectedFilters.resultStatus || selectedFilters.suggestionSource), collection) };
       }
       if (input.action === "group") {
         regroup(context);
         const group = groupsByIds(context, [input.groupId])[0], page = pageNumber(input.page), sources = context.sources.filter(source => group.sourceIds.includes(source.id));
-        return { ...response(context), group: importGroupDto(group), sources: sources.slice((page - 1) * 50, page * 50).map(sourceDto), total: sources.length, page, pageSize: 50 };
+        return { ...response(context), group: importGroupDto(group, importCollectionLookup(context.state.resources, context.publication)(group)), sources: sources.slice((page - 1) * 50, page * 50).map(sourceDto), total: sources.length, page, pageSize: 50 };
       }
       // Committed request receipts are checked before revisions, so a successful timed-out call can be retried.
-      const operation = ["commit", "resolve", "undo"].includes(String(input.action)) ? await replay(context, input) : undefined;
+      const operation = ["commit", "resolve", "undo", "collection"].includes(String(input.action)) ? await replay(context, input) : undefined;
       if (operation?.receipt) return { ...response(context), receipt: operation.receipt, replayed: true };
       revision(input.batchRevision, context.row.revision);
       if (operation) revision(input.libraryRevision, context.libraryRevision);
       if (input.action === "select") {
         regroup(context);
-        const groups = filteredImportGroups(context.groups, filters(input.filters)).filter(group => !group.readOnly);
+        const groups = filteredImportGroups(context.groups, filters(input.filters), importCollectionLookup(context.state.resources, context.publication)).filter(group => !group.readOnly);
         return { ...response(context), groupIds: groups.map(group => group.id), total: groups.length };
       }
       if (input.action === "pause" || input.action === "resume" || input.action === "cancel") {
@@ -223,6 +222,17 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
         if (!["completed", "cancelled"].includes(String(context.row.metadata.status))) throw new LibraryInputError("请先取消未完成批次，再清理记录。");
         await client.query("DELETE FROM library_private.import_batches WHERE id=$1 AND owner_id=$2", [context.row.id, ownerId]);
         return { deleted: true };
+      }
+      if (input.action === "collection") {
+        if (input.mode !== "archive" && input.mode !== "restore") throw new LibraryInputError("请选择移出收藏或恢复收藏。");
+        const group = groupsByIds(context, [input.groupId])[0];
+        const collection = importCollectionLookup(context.state.resources, context.publication)(group);
+        if (!collection || collection.resourceId !== input.expectedResourceId) throw new LibraryInputError("这条导入记录与收藏的关联已变化，请重新打开详情核对。", 409);
+        if (collection.state === "missing") throw new LibraryInputError("关联收藏已不存在，不能移出或恢复；导入记录会保留。", 409);
+        if ((input.mode === "archive" && collection.state !== "active") || (input.mode === "restore" && collection.state !== "archived")) throw new LibraryInputError("收藏状态已变化，请刷新后重新核对。", 409);
+        const transition = applyLibraryAction(context.state, { action: "bulk", ids: [collection.resourceId], changes: { status: input.mode === "archive" ? "archived" : "organized", visibility: "private" } }, context.publication);
+        context.state = transition.state;
+        return receipt(context, operation!, "collection", [{ groupId: group.id, resourceId: collection.resourceId, status: input.mode === "archive" ? "archived" : "restored", reason: null }], true);
       }
       if (input.action === "undo-preview") {
         const items = undoItems(context);

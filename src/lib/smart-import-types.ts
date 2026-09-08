@@ -6,7 +6,7 @@ export type SmartImportDecision = "defer" | "keep" | "ignore";
 export type SmartImportBatchStatus = "reviewing" | "paused" | "partial" | "completed" | "cancelled" | "failed";
 export type SmartImportView = "review" | "suggested" | "duplicates" | "invalid" | "excluded" | "all";
 export type SmartImportMatchKind = "new" | "existing" | "archived" | "published-only";
-export type SmartImportResultStatus = "ready" | "review" | "skipped" | "collected";
+export type SmartImportResultStatus = "ready" | "review" | "skipped" | "collected" | "removed";
 export type SmartImportSuggestionMode = "preserve" | "accept-preserving-manual";
 export type SmartImportOutcomeKind = "created" | "linked" | "restored" | "merged" | "skipped" | "undone";
 
@@ -61,6 +61,14 @@ export type SmartImportOutcome = {
   completedAt: string;
 };
 
+/** Live owner-only projection for a created/linked/restored/merged collection association. */
+export type SmartImportCurrentCollection = {
+  resourceId: string;
+  resource: Pick<LibraryResource, "name" | "url" | "kind" | "category" | "description" | "tags"> | null;
+  state: "active" | "archived" | "missing";
+  publishedInSnapshot: boolean;
+};
+
 export type SmartImportGroup = {
   id: string;
   revision: SmartImportRevision;
@@ -86,6 +94,8 @@ export type SmartImportGroup = {
   proposal: SmartImportProposal;
   resultStatus: SmartImportResultStatus;
   resultReasons: string[];
+  /** Never persisted as import history. Skipped and undone outcomes have no manageable association. */
+  currentCollection: SmartImportCurrentCollection | null;
 };
 
 export type SmartImportSummary = {
@@ -198,14 +208,14 @@ export type SmartImportCommitPreview = SmartImportBatchContext & {
 
 export type SmartImportReceiptItem = {
   groupId: string;
-  status: "created" | "skipped" | "already-completed" | "needs-review" | "failed" | "undone" | "linked" | "restored" | "merged";
+  status: "created" | "skipped" | "already-completed" | "needs-review" | "failed" | "undone" | "linked" | "restored" | "merged" | "archived";
   resourceId: string | null;
   reason: string | null;
 };
 
 export type SmartImportReceipt = {
   requestId: string;
-  action: "commit" | "resolve" | "undo";
+  action: "commit" | "resolve" | "undo" | "collection";
   completedAt: string;
   items: SmartImportReceiptItem[];
   /** Versions at the original commit; current versions remain in the response context. */
@@ -261,6 +271,7 @@ export type SmartImportRequest =
   | (LibraryWrite & { action: "commit"; groupIds: string[]; suggestionMode?: SmartImportSuggestionMode })
   | (BatchWrite & Resolution & { action: "resolve-preview" })
   | (LibraryWrite & Resolution & { action: "resolve" })
+  | (BatchWrite & { action: "collection"; mode: "archive" | "restore"; groupId: string; expectedResourceId: string; libraryRevision: SmartImportRevision; requestId: string })
   | (BatchWrite & { action: "undo-preview" })
   | (LibraryWrite & { action: "undo"; groupIds: string[]; includeEditedResourceIds?: string[] });
 

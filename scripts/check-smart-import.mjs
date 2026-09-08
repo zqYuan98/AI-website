@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createTsLoader } from "./lib/load-ts.mjs";
 const load = createTsLoader();
 const { canonicalBookmarkUrl, parseBookmarkHtmlDetailed } = load("src/lib/bookmark-import.ts");
-const { parseImportSources, regroupImportSources, editImportSource, importSummary, filteredImportGroups, projectImportAcceptance, importResult, importRelationshipHash, importGroupDto } = load("src/lib/smart-import-domain.ts");
+const { parseImportSources, regroupImportSources, editImportSource, importSummary, filteredImportGroups, projectImportAcceptance, importResult, importRelationshipHash, importGroupDto, importCollectionLookup, importFacets } = load("src/lib/smart-import-domain.ts");
 assert.equal(canonicalBookmarkUrl("https://example.com/?q=a%20b&utm_source=x"), canonicalBookmarkUrl("https://example.com/?q=a%20b"));
 assert.equal(canonicalBookmarkUrl("https://example.com/?%75tm_source=x&a=%2f&b=2"), "https://example.com/?a=%2f&b=2");
 for (const [a,b] of [["/a", "/b"], ["/a", "/a/"], ["/?a=1&b=2", "/?b=2&a=1"], ["/#a", "/#b"]]) assert.notEqual(canonicalBookmarkUrl(`https://example.com${a}`), canonicalBookmarkUrl(`https://example.com${b}`));
@@ -86,11 +86,11 @@ const resultGroups = regroupImportSources(resultOrigins, [], [
   { id: "archive", name: "Archive", url: "https://archive.example.com/a", status: "archived", visibility: "private", category: "学习与研究" },
 ], { ...emptyPublication, resources: [{ id: "publication", name: "Published", url: "https://publication.example.com/a", visibility: "public" }] });
 const resultSummary = importSummary(resultOrigins, resultGroups);
-assert.deepEqual(resultSummary.resultCounts, { ready: 1, review: 3, skipped: 1, collected: 0 });
+assert.deepEqual(resultSummary.resultCounts, { ready: 1, review: 3, skipped: 1, collected: 0, removed: 0 });
 assert.equal(Object.values(resultSummary.resultCounts).reduce((a, b) => a + b, 0), resultSummary.groupTotal);
 assert.equal(resultSummary.skippedSources, 3, "Existing, invalid and excluded origins are source units; duplicate origins of a ready group are not skipped.");
 assert.equal(resultSummary.duplicateSources, 1);
-for (const state of ["ready", "review", "skipped", "collected"]) assert.equal(filteredImportGroups(resultGroups, { resultStatus: state }).length, resultSummary.resultCounts[state]);
+for (const state of ["ready", "review", "skipped", "collected", "removed"]) assert.equal(filteredImportGroups(resultGroups, { resultStatus: state }).length, resultSummary.resultCounts[state]);
 const unknown = resultGroups.find(group => group.representative.url.includes("unknown"));
 unknown.manualFields.category = "设计与创作"; unknown.fields.category = "设计与创作"; unknown.categoryConfirmed = true;
 assert.equal(importResult(unknown).status, "ready", "A confirmed category resolves unclear classification.");
@@ -109,4 +109,24 @@ ready.error = "Capacity fixture"; assert.equal(importResult(ready).status, "revi
 ready.readOnly = true; ready.outcome = { kind: "created", resourceId: "created", completedAt: "" };
 assert.equal(importResult(ready).status, "collected");
 assert(!filteredImportGroups(resultGroups, { resultStatus: "skipped" }).some(group => group.id === ready.id));
+const currentResource = { id: 'created', name: 'Current owner name', url: 'https://changed.example.com/new-path', kind: 'asset', category: '设计与创作', description: 'Current owner description', tags: ['current-tag'], status: 'organized', notes: 'PRIVATE-NOTE-NOT-IN-DTO', sourceFolder: 'PRIVATE-FOLDER-NOT-IN-DTO' };
+const live = importCollectionLookup([currentResource], { ...emptyPublication, resources: [{ id: 'created' }] });
+const collection = live(ready), currentDto = importGroupDto(ready, collection);
+assert.deepEqual(Object.keys(collection.resource).sort(), ['name', 'url', 'kind', 'category', 'description', 'tags'].sort());
+assert.equal(collection.publishedInSnapshot, true); assert.equal(currentDto.resultStatus, 'collected');
+assert.equal(collection.resource.name, currentResource.name);
+assert.equal(filteredImportGroups([ready], { resultStatus: 'collected', search: 'current owner description', category: '设计与创作', kind: 'asset', domain: 'changed.example.com' }, live).length, 1);
+assert.deepEqual(importFacets(origins, [ready], true, live).categories, [{ value: '设计与创作', count: 1 }]);
+collection.resource.tags.push('must-not-mutate'); assert.deepEqual(currentResource.tags, ['current-tag']);
+const archivedLookup = importCollectionLookup([{ ...currentResource, status: 'archived' }], emptyPublication);
+assert.equal(importGroupDto(ready, archivedLookup(ready)).resultStatus, 'removed');
+assert.equal(importSummary(resultOrigins, resultGroups, archivedLookup).resultCounts.removed, 1);
+assert.equal(importSummary(resultOrigins, resultGroups, archivedLookup).skippedSources, importSummary(resultOrigins, resultGroups).skippedSources, 'Removed associations never enter skipped-source counts.');
+const missing = importCollectionLookup([], { ...emptyPublication, resources: [{ id: 'created' }] })(ready);
+assert.equal(missing.state, 'missing'); assert.equal(missing.resource, null); assert.equal(missing.publishedInSnapshot, true);
+assert.equal(importGroupDto(ready, missing).resultStatus, 'removed');
+for (const kind of ['skipped', 'undone']) {
+  const historicalOnly = { ...ready, outcome: { ...ready.outcome, kind } };
+  assert.equal(live(historicalOnly), null); assert.equal(importGroupDto(historicalOnly).resultStatus, 'skipped');
+}
 console.log("PASS: conservative URL identity, retained origins, manual-first read-only proposals, mutually exclusive result counts and relationship review guards.");

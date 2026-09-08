@@ -59,7 +59,59 @@ try {
   await pool.query('INSERT INTO library_public.snapshot(snapshot) VALUES($1::jsonb)', [JSON.stringify(empty)]);
   const fixture = await createSmartAiFixtureData(pool, ownerId, encryptionKey);
 
+  async function checkCollection() {
+    const entry = fixture.batches.collected;
+    const page = number => fixture.imports.handle({ action: 'get', batchId: entry.batchId, page: number, filters: { resultStatus: 'collected' } }, ownerId);
+    const detail = groupId => fixture.imports.handle({ action: 'group', batchId: entry.batchId, groupId }, ownerId);
+    const first = await page(1), second = await page(2);
+    assert.equal(first.total, 59);
+    assert.equal(first.groups.length, 50);
+    assert.equal(second.groups.length, 9);
+    assert.equal(new Set([...first.groups, ...second.groups].map(group => group.id)).size, 59);
+    const linked = (await detail(entry.linked.groupId)).group;
+    assert.equal(linked.outcome.kind, 'linked');
+    assert.equal(linked.currentCollection.resource.name, '我已修改的收藏名称 · 关联示例');
+    assert.equal(linked.currentCollection.resource.description, '这是现有收藏中的手工说明；关联导入不应覆盖它。');
+    assert.equal(linked.currentCollection.resource.category, '学习与研究');
+    assert.notEqual(linked.currentCollection.resource.name, linked.representative.name);
+    assert.equal((await detail(entry.published.groupId)).group.currentCollection.publishedInSnapshot, true);
+    const removed = await fixture.imports.handle({ action: 'get', batchId: entry.batchId, page: 1, filters: { resultStatus: 'removed' } }, ownerId);
+    assert.equal(removed.total, 2);
+    assert.equal((await detail(entry.archived.groupId)).group.currentCollection.state, 'archived');
+    const missing = await detail(entry.missing.groupId);
+    assert.equal(missing.group.currentCollection.state, 'missing');
+    assert.equal(missing.group.currentCollection.resource, null);
+    await assert.rejects(fixture.imports.handle({ action: 'collection', mode: 'restore', batchId: entry.batchId, groupId: entry.missing.groupId, expectedResourceId: entry.missing.resourceId, batchRevision: missing.batchRevision, libraryRevision: missing.libraryRevision, requestId: randomUUID() }, ownerId), error => error.status === 409);
+
+    const publicationBefore = (await pool.query('SELECT snapshot FROM library_public.snapshot')).rows[0].snapshot;
+    // Move a real second-page item out, retry the same request, then restore it.
+    const boundary = second.groups[0];
+    async function change(groupId, resourceId, mode) {
+      const current = await detail(groupId);
+      const input = { action: 'collection', mode, batchId: entry.batchId, groupId, expectedResourceId: resourceId, batchRevision: current.batchRevision, libraryRevision: current.libraryRevision, requestId: randomUUID() };
+      const result = await fixture.imports.handle(input, ownerId);
+      assert.equal(result.receipt.items[0].status, mode === 'archive' ? 'archived' : 'restored');
+      assert.equal((await fixture.imports.handle(input, ownerId)).replayed, true);
+      return result;
+    }
+    await change(boundary.id, boundary.currentCollection.resourceId, 'archive');
+    assert.equal((await page(2)).groups.length, 8);
+    assert.equal((await detail(boundary.id)).group.resultStatus, 'removed');
+    await change(boundary.id, boundary.currentCollection.resourceId, 'restore');
+    assert.equal((await page(2)).groups.length, 9);
+    assert.deepEqual((await detail(boundary.id)).group.outcome, boundary.outcome);
+    await change(entry.archived.groupId, entry.archived.resourceId, 'restore');
+    const restored = (await fixture.library.handle({ action: 'list' }, ownerId)).resources.find(resource => resource.id === entry.archived.resourceId);
+    assert.equal(restored.status, 'organized');
+    assert.equal(restored.visibility, 'private');
+    await change(entry.archived.groupId, entry.archived.resourceId, 'archive');
+    assert.deepEqual((await pool.query('SELECT snapshot FROM library_public.snapshot')).rows[0].snapshot, publicationBefore);
+    assert.equal((await page(1)).total, 59);
+    console.log('[smart-ai-ui-fixture] Collection checks passed: 59 active / 2 removed, real commit + link, 50-row pagination, archive/restore replay, missing protection, unchanged publication.');
+  }
+
   async function check() {
+    await checkCollection();
     const config = await fixture.settings.read(ownerId);
     assert.equal(config.enabled, true);
     assert.equal(config.settings.baseUrl, FIXTURE_MODEL_URL);
@@ -156,6 +208,7 @@ try {
     function showLinks() {
       console.log(`[smart-ai-ui-fixture] Login: ${origin}/login (synthetic fixture account).`);
       for (const [name, item] of Object.entries(fixture.batches)) console.log(`[smart-ai-ui-fixture] ${name}: ${origin}/tools/manage/imports/${item.batchId}`);
+      console.log('[smart-ai-ui-fixture] collected: 59 active resources across 2 pages; 2 removed examples (archived / missing). Includes a modified linked resource and a published snapshot resource.');
       console.log('[smart-ai-ui-fixture] Commands on stdin: links | test-fails on | test-fails off | run current | quit. All model results are simulated locally.');
     }
     showLinks();

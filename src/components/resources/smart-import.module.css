@@ -353,7 +353,7 @@
 .newSuggestions .textLink { color: #3a7551; flex-shrink: 0; }
 .resumeNotice { border-color: #e7deca; background: #fbf8f1; color: #897246; }
 .resultsPanel { border: 1px solid #e0e7f0; border-radius: 10px; padding: 0 20px; background: #fff; }
-.resultTabs { display: flex; gap: 26px; border-bottom: 1px solid #e0e7f0; }
+.resultTabs { display: flex; flex-wrap: wrap; gap: 0 26px; border-bottom: 1px solid #e0e7f0; }
 .resultTabs button { display: flex; align-items: center; gap: 8px; min-height: 57px; padding: 15px 0 13px; font: inherit; font-size: 16px; border: 0; border-bottom: 3px solid transparent; background: none; color: #8191a6; cursor: pointer; white-space: nowrap; }
 .resultTabs button[aria-pressed=true] { color: #285dca; border-color: #285dca; font-weight: 550; }
 .resultTabs button > span { font-size: 14px; padding: 0 5px; background: #f1f4f9; border-radius: 4px; font-weight: 400; }
@@ -448,8 +448,8 @@
   .aiHeroActions .help { margin: 0; }
   .aiHistory { padding: 0 14px; }
   .resultsPanel { padding: 0 12px; border-radius: 9px; }
-  .resultTabs { justify-content: space-between; gap: 7px; }
-  .resultTabs button { font-size: 14px; gap: 4px; padding: 13px 0 11px; min-height: 54px; }
+  .resultTabs { justify-content: flex-start; gap: 0 18px; }
+  .resultTabs button { font-size: 16px; gap: 4px; padding: 13px 0 11px; min-height: 54px; }
   .resultTabs button > span { font-size: 14px; padding: 0 3px; }
   .resultListToolbar { gap: 0; padding: 10px 0 7px; }
   .resultListToolbar .checkLabel { gap: 4px 7px; }

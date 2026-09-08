@@ -38,6 +38,7 @@ if (options[0] !== '--typecheck') {
   run('cloud API access and public cache boundary', 'scripts/check-cloud-api.mjs');
   run('smart import grouping and conservative deduplication', 'scripts/check-smart-import.mjs');
   run('persistent import transactions and safe undo', 'scripts/check-smart-import-store.mjs');
+  run('collected import archive, restore and live state', 'scripts/check-smart-import-collection.mjs');
   run('custom model configuration and transport security', 'scripts/check-smart-api.mjs');
   run('durable analysis and privacy boundary', 'scripts/check-smart-analysis.mjs');
   run('AI connection and task interface state', 'scripts/check-smart-ui-state.mjs');

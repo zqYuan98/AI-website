@@ -237,7 +237,7 @@ try {
   const acceptanceId = acceptanceBatch.batch.id;
   await db.query("UPDATE library_private.import_batches SET metadata=metadata #- '{summary,resultCounts}' #- '{summary,skippedSources}' WHERE id=$1", [acceptanceId]);
   const legacyListed = (await handle({ action: "list" })).batches.find(batch => batch.id === acceptanceId);
-  assert.deepEqual(legacyListed.summary.resultCounts, { ready: 1, review: 1, skipped: 0, collected: 0 });
+  assert.deepEqual(legacyListed.summary.resultCounts, { ready: 1, review: 1, skipped: 0, collected: 0, removed: 0 });
   assert.equal(legacyListed.revision, acceptanceBatch.batchRevision, "Historical result-count DTO upgrades do not mutate a batch.");
   let acceptancePage = await get(acceptanceId);
   const acceptanceGroup = acceptancePage.groups.find(group => group.representative.url.includes("github.com"));

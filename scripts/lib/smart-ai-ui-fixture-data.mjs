@@ -99,8 +99,65 @@ export async function createSmartAiFixtureData(pool, ownerId, encryptionKey) {
     }
     batches[scenario] = { batchId: context.batch.id, oldJobId, currentJobId };
   }
+
+  // Exercise real import/library transactions. Only the deliberately missing record
+  // below is removed by targeted SQL; no import outcome is fabricated.
+  const library = load('src/lib/cloud-library.ts').createCloudLibraryStore(pool, () => ownerId);
+  async function allGroups(batchId) {
+    const first = await imports.handle({ action: 'get', batchId, page: 1, filters: { view: 'all' } }, ownerId);
+    const groups = [...first.groups];
+    for (let page = 2; page <= Math.ceil(first.total / first.pageSize); page++) groups.push(...(await imports.handle({ action: 'get', batchId, page, filters: { view: 'all' } }, ownerId)).groups);
+    return { ...first, groups };
+  }
+  async function createBookmarks(name, entries) {
+    const content = '<!DOCTYPE NETSCAPE-Bookmark-file-1><DL><DT><H3>开发与技术</H3><DL>' + entries.map(entry => `<DT><A HREF="${entry.url}">${entry.name}</A>`).join('\n') + '</DL></DL>';
+    return imports.handle({ action: 'create', requestId: randomUUID(), name, format: 'html', content }, ownerId);
+  }
+  async function commitGroups(batchId, groupIds) {
+    const context = await allGroups(batchId);
+    const decided = await imports.handle({ action: 'decide', batchId, batchRevision: context.batchRevision, groupIds, decision: 'keep', fields: { category: '开发与技术' } }, ownerId);
+    const preview = await imports.handle({ action: 'commit-preview', batchId, batchRevision: decided.batchRevision, groupIds, suggestionMode: 'accept-preserving-manual' }, ownerId);
+    if (preview.items.some(item => item.disposition !== 'create')) throw new Error('Offline collection fixture expected only new resources.');
+    return imports.handle({ action: 'commit', batchId, batchRevision: preview.batchRevision, libraryRevision: preview.libraryRevision, requestId: randomUUID(), confirmation: preview.confirmation, groupIds, suggestionMode: 'accept-preserving-manual' }, ownerId);
+  }
+  async function libraryWrite(input) {
+    const current = await library.handle({ action: 'list' }, ownerId);
+    return library.handle({ ...input, libraryRevision: current.libraryRevision }, ownerId);
+  }
+  const linkedURL = 'https://example.com/fixture/collection/already-saved';
+  const existingBatch = await createBookmarks('离线收藏验收 · 既有收藏来源', [{ name: '原始导入名称 · 关联示例', url: linkedURL }]);
+  const existingPage = await allGroups(existingBatch.batch.id);
+  const existingCommit = await commitGroups(existingBatch.batch.id, existingPage.groups.map(group => group.id));
+  const linkedResourceId = existingCommit.receipt.items[0].resourceId;
+  await libraryWrite({ action: 'save', resource: { id: linkedResourceId, name: '我已修改的收藏名称 · 关联示例', description: '这是现有收藏中的手工说明；关联导入不应覆盖它。', category: '学习与研究', tags: ['手工修改', '离线验收'], pinned: true } });
+
+  const entries = Array.from({ length: 60 }, (_, index) => ({ name: `已收藏示例 ${String(index + 1).padStart(2, '0')}`, url: `https://example.com/fixture/collection/${index + 1}` }));
+  entries[0].name = '已公开示例 · 网站快照保留';
+  entries[1].name = '已移出示例 · 可以恢复';
+  entries[2].name = '记录缺失示例 · 不可恢复';
+  entries.push({ name: '原始导入名称 · 应显示现有收藏', url: linkedURL });
+  const collectionContext = await createBookmarks('离线收藏验收 · 分页与移出恢复', entries);
+  const batchId = collectionContext.batch.id;
+  const initial = await allGroups(batchId);
+  const linkedGroupId = initial.groups.find(group => group.representative.url === linkedURL).id;
+  const committed = await commitGroups(batchId, initial.groups.filter(group => group.id !== linkedGroupId).map(group => group.id));
+  const linkPreview = await imports.handle({ action: 'resolve-preview', batchId, batchRevision: committed.batchRevision, groupId: linkedGroupId, resourceId: linkedResourceId, mode: 'link' }, ownerId);
+  await imports.handle({ action: 'resolve', batchId, batchRevision: linkPreview.batchRevision, libraryRevision: linkPreview.libraryRevision, requestId: randomUUID(), confirmation: linkPreview.confirmation, groupId: linkedGroupId, resourceId: linkedResourceId, mode: 'link' }, ownerId);
+  const refs = {};
+  for (const [name, index] of [['published', 0], ['archived', 1], ['missing', 2], ['ordinary', 3]]) {
+    const group = initial.groups.find(item => item.representative.url === entries[index].url);
+    refs[name] = { groupId: group.id, resourceId: committed.receipt.items.find(item => item.groupId === group.id).resourceId };
+  }
+  await libraryWrite({ action: 'bulk', ids: [refs.archived.resourceId], changes: { status: 'archived' } });
+  await libraryWrite({ action: 'save', resource: { id: refs.published.resourceId, status: 'organized', visibility: 'public' } });
+  const publication = await library.handle({ action: 'publish-preview' }, ownerId);
+  await library.handle({ action: 'publish', libraryRevision: publication.libraryRevision, revision: publication.revision }, ownerId);
+  // Simulate a historical association whose current private record no longer exists.
+  // The actual import receipt/outcome remains intact for the missing-state UI.
+  await pool.query("UPDATE library_private.state SET state=jsonb_set(state,'{resources}',(SELECT COALESCE(jsonb_agg(resource),'[]'::jsonb) FROM jsonb_array_elements(state->'resources') resource WHERE resource->>'id'<>$2)),revision=revision+1,updated_at=now() WHERE owner_id=$1", [ownerId, refs.missing.resourceId]);
+  batches.collected = { batchId, ...refs, linked: { groupId: linkedGroupId, resourceId: linkedResourceId } };
   return {
-    imports, settings, analysis, batches, load, overrides,
+    imports, settings, analysis, library, batches, load, overrides,
     get simulatedCompletions() { return completions; },
     async setTestFailure(value) { testFails = value; await pool.query('UPDATE library_private.smart_api_settings SET last_test_started_at=NULL,test_active_until=NULL,test_claim_id=NULL WHERE owner_id=$1', [ownerId]); },
   };

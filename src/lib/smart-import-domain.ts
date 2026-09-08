@@ -2,12 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { bookmarkUrl, canonicalBookmarkUrl, MAX_BOOKMARK_BYTES, MAX_IMPORT_ITEMS, parseBookmarkHtmlDetailed, validateImportCandidate } from "./bookmark-import";
 import { LibraryInputError } from "./library-domain";
 import { RESOURCE_CATEGORIES, RESOURCE_KINDS, RESOURCE_KIND_LABELS, type LibraryResource, type PublicLibrarySnapshot } from "./resource-types";
-import type { SmartImportDecision, SmartImportFields, SmartImportFilters, SmartImportGroup, SmartImportSource, SmartImportSuggestion, SmartImportSummary, SmartImportFacets, SmartImportExistingMatch, SmartImportProposal, SmartImportSuggestionMode, SmartImportResultStatus } from "./smart-import-types";
+import type { SmartImportDecision, SmartImportFields, SmartImportFilters, SmartImportGroup, SmartImportSource, SmartImportSuggestion, SmartImportSummary, SmartImportFacets, SmartImportExistingMatch, SmartImportProposal, SmartImportSuggestionMode, SmartImportResultStatus, SmartImportCurrentCollection } from "./smart-import-types";
 
 export type ImportSourceRecord = SmartImportSource & {
   intent?: { decision: SmartImportDecision; fields: Partial<SmartImportFields>; categoryConfirmed: boolean };
 };
-export type ImportGroupRecord = Omit<SmartImportGroup, "proposal" | "resultStatus" | "resultReasons"> & {
+export type ImportGroupRecord = Omit<SmartImportGroup, "proposal" | "resultStatus" | "resultReasons" | "currentCollection"> & {
   canonical: string;
   sourceIds: string[];
   sourceFolders: string[];
@@ -149,7 +149,8 @@ export function importRelationshipHash(group: ImportGroupRecord): string {
 }
 
 /** One partition for the result list, counts, explicit selection and acceptance guard. */
-export function importResult(group: ImportGroupRecord): { status: SmartImportResultStatus; reasons: string[] } {
+export function importResult(group: ImportGroupRecord, collection?: SmartImportCurrentCollection | null): { status: SmartImportResultStatus; reasons: string[] } {
+  if (group.readOnly && collection && collection.state !== "active") return { status: "removed", reasons: [collection.state === "missing" ? "关联收藏已不存在，导入记录保留" : "已移出收藏，可恢复为仅自己可见的已整理资源"] };
   if (group.readOnly) return group.outcome?.kind === "skipped" || group.outcome?.kind === "undone"
     ? { status: "skipped", reasons: [group.outcome.kind === "undone" ? "已撤回本次收藏" : "此网址已在收藏中"] }
     : { status: "collected", reasons: [] };
@@ -164,6 +165,19 @@ export function importResult(group: ImportGroupRecord): { status: SmartImportRes
   if (!acknowledged && (group.suspectedMatches.length || group.suspectedGroupCount)) reasons.push("存在相似网址，请比较后确认是否分别收藏");
   if (!group.categoryConfirmed && group.suggestion?.confidence !== "clear" && group.decision !== "keep") reasons.push("分类线索不足，请修改分类或确认当前内容");
   return reasons.length ? { status: "review", reasons: [...new Set(reasons)] } : { status: "ready", reasons: [] };
+}
+
+export type ImportCollectionLookup = (group: Pick<ImportGroupRecord, "readOnly" | "outcome">) => SmartImportCurrentCollection | null;
+/** Resolve immutable associations by ID, never by a possibly edited or reused URL. */
+export function importCollectionLookup(library: LibraryResource[], publication: PublicLibrarySnapshot): ImportCollectionLookup {
+  const resources = new Map(library.map(resource => [resource.id, resource]));
+  const published = new Set(publication.resources.map(resource => resource.id));
+  return group => {
+    if (!group.readOnly || !group.outcome?.resourceId || !["created", "linked", "restored", "merged"].includes(group.outcome.kind)) return null;
+    const resourceId = group.outcome.resourceId, current = resources.get(resourceId);
+    const resource = current ? { name: current.name, url: current.url, kind: current.kind, category: current.category, description: current.description, tags: [...current.tags] } : null;
+    return { resourceId, resource, state: !current ? "missing" : current.status === "archived" ? "archived" : "active", publishedInSnapshot: published.has(resourceId) };
+  };
 }
 
 export function regroupImportSources(sources: ImportSourceRecord[], previous: ImportGroupRecord[], library: LibraryResource[], publication: PublicLibrarySnapshot, currentBatchId?: string): ImportGroupRecord[] {
@@ -250,21 +264,21 @@ export function regroupImportSources(sources: ImportSourceRecord[], previous: Im
   return groups;
 }
 
-export function importGroupDto(group: ImportGroupRecord): SmartImportGroup {
+export function importGroupDto(group: ImportGroupRecord, currentCollection: SmartImportCurrentCollection | null = null): SmartImportGroup {
   const { id, revision, representativeId, representative, sourceCount, sourcesPreview, matchKind, matches, suspectedMatches, suspectedGroups, suspectedGroupCount, decision, fields, categoryConfirmed, suggestion, reviewRequired, reviewReasons, outcome, error, readOnly } = group;
-  const result = importResult(group);
-  return { id, revision, representativeId, representative: sourceDto(representative), sourceCount, sourcesPreview: sourcesPreview.map(sourceDto), matchKind, matches, suspectedMatches, suspectedGroups, suspectedGroupCount, decision, fields, categoryConfirmed, suggestion, reviewRequired, reviewReasons, outcome, error, readOnly, proposal: projectImportAcceptance(group), resultStatus: result.status, resultReasons: result.reasons };
+  const result = importResult(group, currentCollection);
+  return { id, revision, representativeId, representative: sourceDto(representative), sourceCount, sourcesPreview: sourcesPreview.map(sourceDto), matchKind, matches, suspectedMatches, suspectedGroups, suspectedGroupCount, decision, fields, categoryConfirmed, suggestion, reviewRequired, reviewReasons, outcome, error, readOnly, proposal: projectImportAcceptance(group), resultStatus: result.status, resultReasons: result.reasons, currentCollection };
 }
 export function sourceDto(source: SmartImportSource): SmartImportSource {
   const { id, ordinal, groupId, name, url, sourceFolder, createdAt, excluded, invalidReason } = source;
   return { id, ordinal, groupId, name, url, sourceFolder, createdAt, excluded, invalidReason };
 }
-export function importSummary(sources: ImportSourceRecord[], groups: ImportGroupRecord[]): SmartImportSummary {
+export function importSummary(sources: ImportSourceRecord[], groups: ImportGroupRecord[], collection?: ImportCollectionLookup): SmartImportSummary {
   const validSources = sources.filter(source => !source.excluded && !source.invalidReason).length;
   const count = (fn: (group: ImportGroupRecord) => boolean) => groups.filter(fn).length;
-  const resultCounts = { ready: 0, review: 0, skipped: 0, collected: 0 };
+  const resultCounts = { ready: 0, review: 0, skipped: 0, collected: 0, removed: 0 };
   let skippedSources = sources.length - validSources;
-  for (const group of groups) { const result = importResult(group); resultCounts[result.status]++; if (result.status === "skipped") skippedSources += group.sourceCount; }
+  for (const group of groups) { const result = importResult(group, collection?.(group)); resultCounts[result.status]++; if (result.status === "skipped") skippedSources += group.sourceCount; }
   return { rawTotal: sources.length, validSources, invalidSources: sources.filter(source => !source.excluded && Boolean(source.invalidReason)).length,
     excludedSources: sources.filter(source => source.excluded).length, duplicateSources: validSources - groups.length, groupTotal: groups.length,
     newGroups: count(group => group.matchKind === "new"), existingGroups: count(group => group.matchKind === "existing"), archivedGroups: count(group => group.matchKind === "archived"), publishedOnlyGroups: count(group => group.matchKind === "published-only"),
@@ -272,32 +286,34 @@ export function importSummary(sources: ImportSourceRecord[], groups: ImportGroup
     pendingGroups: count(group => !group.readOnly && group.decision !== "ignore" && !group.error), keptGroups: count(group => !group.readOnly && group.decision === "keep"), createdResources: count(group => group.outcome?.kind === "created"), resultCounts, skippedSources };
 }
 
-export function filteredImportGroups(groups: ImportGroupRecord[], filters: SmartImportFilters): ImportGroupRecord[] {
+export function filteredImportGroups(groups: ImportGroupRecord[], filters: SmartImportFilters, collection?: ImportCollectionLookup): ImportGroupRecord[] {
   const query = filters.search?.trim().toLowerCase();
   return groups.filter(group => {
+    const current = collection?.(group);
     if (filters.suggestionSource && group.suggestion?.source !== filters.suggestionSource) return false;
-    if (filters.resultStatus && importResult(group).status !== filters.resultStatus) return false;
+    if (filters.resultStatus && importResult(group, current).status !== filters.resultStatus) return false;
     if (filters.view === "invalid" || filters.view === "excluded") return false;
     if (filters.view === "duplicates" && group.matchKind === "new" && group.sourceCount === 1) return false;
     if (filters.view === "suggested" && (group.suggestion?.confidence !== "clear" || group.readOnly || group.reviewRequired || group.suspectedMatches.length || group.suspectedGroupCount || group.matchKind !== "new")) return false;
     if (filters.view === "review" && (group.readOnly || group.decision === "ignore" || (group.suggestion?.confidence === "clear" && !group.reviewRequired && !group.suspectedMatches.length && !group.suspectedGroupCount && group.matchKind !== "published-only"))) return false;
     if (filters.decision && filters.decision !== group.decision) return false;
-    const proposed = filters.resultStatus || filters.suggestionSource ? projectImportAcceptance(group).fields : null;
+    const proposed = current?.resource ?? (filters.resultStatus || filters.suggestionSource ? projectImportAcceptance(group).fields : null);
     if (filters.kind && filters.kind !== (proposed?.kind ?? group.fields.kind)) return false;
     if (filters.category && filters.category !== (proposed?.category ?? (group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category))) return false;
     if (filters.folder && !group.sourceFolders.includes(filters.folder)) return false;
-    if (filters.domain && new URL(group.representative.url).hostname !== filters.domain) return false;
-    const searchableFields = filters.suggestionSource && proposed
+    const displayUrl = current?.resource?.url ?? group.representative.url;
+    if (filters.domain && new URL(displayUrl).hostname !== filters.domain) return false;
+    const searchableFields = (current?.resource || filters.suggestionSource) && proposed
       ? `${proposed.name} ${proposed.kind} ${RESOURCE_KIND_LABELS[proposed.kind]} ${proposed.category} ${proposed.tags.join(" ")} ${proposed.description}`
       : group.fields.name;
-    return !query || `${searchableFields} ${group.representative.url} ${group.sourceFolders.join(" ")}`.toLowerCase().includes(query);
+    return !query || `${searchableFields} ${displayUrl} ${group.sourceFolders.join(" ")}`.toLowerCase().includes(query);
   });
 }
-export function importFacets(sources: ImportSourceRecord[], groups: ImportGroupRecord[], useProposals = false): SmartImportFacets {
+export function importFacets(sources: ImportSourceRecord[], groups: ImportGroupRecord[], useProposals = false, collection?: ImportCollectionLookup): SmartImportFacets {
   const facets = (entries: [string, string][]) => {
     const buckets = new Map<string, Set<string>>();
     for (const [value, id] of entries) if (value) buckets.set(value, new Set([...(buckets.get(value) ?? []), id]));
     return [...buckets].map(([value, ids]) => ({ value, count: ids.size })).sort((a, b) => a.value.localeCompare(b.value));
   };
-  return { folders: facets(sources.filter(source => source.groupId).map(source => [source.sourceFolder, source.groupId!])), domains: facets(groups.map(group => [new URL(group.representative.url).hostname, group.id])), kinds: facets(groups.map(group => [useProposals ? projectImportAcceptance(group).fields.kind : group.fields.kind, group.id])), categories: facets(groups.map(group => [useProposals ? projectImportAcceptance(group).fields.category : group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category, group.id])) };
+  return { folders: facets(sources.filter(source => source.groupId).map(source => [source.sourceFolder, source.groupId!])), domains: facets(groups.map(group => [new URL(collection?.(group)?.resource?.url ?? group.representative.url).hostname, group.id])), kinds: facets(groups.map(group => [collection?.(group)?.resource?.kind ?? (useProposals ? projectImportAcceptance(group).fields.kind : group.fields.kind), group.id])), categories: facets(groups.map(group => [collection?.(group)?.resource?.category ?? (useProposals ? projectImportAcceptance(group).fields.category : group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category), group.id])) };
 }

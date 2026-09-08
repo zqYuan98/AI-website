@@ -4,6 +4,13 @@
 .aiView p { margin: 0; color: #66758a; font-size: 14px; line-height: 1.75; }
 .manualNote { margin: 6px 0 0; color: #66758a; font-size: 14px; line-height: 1.6; }
 .rowState { padding: 2px 7px; border: 1px solid #dce5f4; border-radius: 4px; color: #47658e; font-size: 14px; white-space: nowrap; }
+.removeButton, .restoreButton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 12px; border: 1px solid #dce5f4; border-radius: 7px; background: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+.removeButton { color: #9b3944; border-color: #ecd8db; }
+.removeButton:hover { background: #fff5f6; }
+.restoreButton { color: #315dba; }
+.restoreButton:hover { background: #f5f8ff; }
+.removeButton:focus-visible, .restoreButton:focus-visible { outline: 2px solid #2e67ed; outline-offset: 3px; }
+.removeButton:disabled, .restoreButton:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 640px) {
   .aiView { padding: 14px; }
   .aiView > div { min-width: 0; flex-basis: 100%; }

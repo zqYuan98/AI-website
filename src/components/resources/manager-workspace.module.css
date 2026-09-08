@@ -65,6 +65,7 @@
 .bulkBar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--accent-soft); border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--border-color)); padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
 .bulkBar strong { color: var(--accent); }
 .bulkBar button { min-height: 44px; color: var(--foreground-muted); }
+.bulkBar .collectionTextButton, .navGroup .collectionTextButton { min-height: 44px; font-size: 16px; }
 .listHeader, .resourceRow { display: grid; grid-template-columns: 34px minmax(150px, 1fr) 48px 112px 74px 80px; align-items: center; column-gap: 10px; }
 .listHeader { border: 1px solid var(--border-color); background: var(--background-subtle); border-radius: 8px 8px 0 0; padding: 2px 12px; font-size: 13px; color: var(--foreground-muted); min-height: 43px; }
 .selectBox { width: 34px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -85,7 +86,10 @@
 .kindCell, .categoryCell, .visibilityCell { font-size: 13px; color: var(--foreground-muted); }
 .visibilityCell small { display: block; margin-top: 3px; font-size: 12px; color: var(--foreground-subtle); }
 .isPublic { color: var(--accent); }
-.rowActions { display: flex; justify-content: flex-end; }
+.rowActions { display: flex; flex-wrap: wrap; justify-content: flex-end; }
+.rowCollectionButton { flex-basis: 100%; min-height: 44px; padding: 8px 0; border-radius: 5px; font-size: 16px; line-height: 1.5; white-space: nowrap; color: var(--foreground-muted); }
+.rowCollectionButton:hover:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
+.rowCollectionButton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .iconButton { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 44px; flex-shrink: 0; color: var(--foreground-muted); border-radius: 5px; }
 .iconButton:hover { color: var(--accent); background: var(--accent-soft); }
 .iconButton svg { width: 16px; height: 16px; }
@@ -123,6 +127,12 @@
 .dialogHeader h2 { font-size: 24px; font-weight: 700; letter-spacing: -.04em; }
 .dialogDescription { font-size: 14px; color: var(--foreground-subtle); line-height: 1.8; margin: 12px 0 22px; }
 .dialogActions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 24px; }
+.collectionActionBody { margin-top: 20px; font-size: 16px; line-height: 1.8; color: var(--foreground-muted); }
+.collectionActionBody > p { margin: 12px 0; overflow-wrap: anywhere; }
+.collectionActionBody .collectionActionName { color: var(--foreground); font-weight: 650; }
+.collectionPublicationNote { padding: 12px 15px; border-left: 2px solid var(--accent); background: var(--accent-soft); }
+.collectionActionBody .error, .collectionActionBody button, .collectionActionBody a { font-size: 16px; }
+.collectionActionBody button, .collectionActionBody a { min-height: 44px; }
 .form { display: grid; gap: 17px; margin-top: 20px; }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .form label, .field { display: block; color: var(--foreground-muted); font-size: 14px; font-weight: 550; }
