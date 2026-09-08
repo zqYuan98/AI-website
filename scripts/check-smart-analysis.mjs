@@ -113,6 +113,45 @@ try {
   await pool.query("INSERT INTO library_private.state(owner_id,state) VALUES($1,$2::jsonb)", [owner, JSON.stringify({ version: 1, resources: [], publishedAt: '' })]);
   await pool.query("INSERT INTO library_public.snapshot(snapshot) VALUES($1::jsonb)", [JSON.stringify({ version: 1, resources: [], publishedAt: '' })]);
   await setConfig();
+  await setConfig({ batchSize: 25, maxRequests: 20 });
+  const filteredBatch = await batch(1020), checkedTargetIds = [];
+  candidates.get(filteredBatch).forEach((target, index) => { target.domain = index < 500 ? `private-${index}.example.com` : `public-${index}.example.com`; });
+  const filteringStore = createSmartAnalysisStore(pool, () => owner, { ...deps, checkPublicTargets: async targets => {
+    assert(targets.length <= 20, 'DNS validation uses bounded chunks rather than one unbounded request.');
+    checkedTargetIds.push(...targets.map(target => target.id));
+    return { targets: targets.filter(target => target.domain.startsWith('public-')), excluded: targets.filter(target => target.domain.startsWith('private-')).map(target => ({ id: target.id, reason: 'Fixture domain is private.' })) };
+  } });
+  const filteredPreview = await filteringStore.preview({ batchId: filteredBatch, batchRevision: '1', groupIds: candidates.get(filteredBatch).map(target => target.id), configVersion: config.version }, owner);
+  assert.equal(filteredPreview.targets.length, 500, 'The first 500 private targets must not starve later sendable candidates.');
+  assert.deepEqual(filteredPreview.targets.map(target => target.id), candidates.get(filteredBatch).slice(500, 1000).map(target => target.id));
+  assert.equal(filteredPreview.excluded.length, 520);
+  assert.equal(new Set([...filteredPreview.targets, ...filteredPreview.excluded].map(target => target.id)).size, 1020);
+  assert.equal(checkedTargetIds.length, 1000, 'Stop resolving further domains as soon as the 500 public slots are filled.');
+  assert.equal(filteredPreview.estimatedRequests, 20);
+  assert(filteredPreview.excluded.slice(-20).every(target => target.reason.includes('限制')));
+  const repeatedDomainBatch = await batch(525), checkedDomainsInPreview = [];
+  candidates.get(repeatedDomainBatch).forEach((target, index) => { target.domain = index < 500 ? 'private-repeated.example.com' : 'public-repeated.example.com'; });
+  const cachingStore = createSmartAnalysisStore(pool, () => owner, { ...deps, checkPublicTargets: async targets => {
+    checkedDomainsInPreview.push(...targets.map(target => target.domain));
+    return { targets: targets.filter(target => target.domain.startsWith('public-')), excluded: targets.filter(target => target.domain.startsWith('private-')).map(target => ({ id: target.id, reason: 'Fixture domain is private.' })) };
+  } });
+  const cachedPreview = await cachingStore.preview({ batchId: repeatedDomainBatch, batchRevision: '1', groupIds: candidates.get(repeatedDomainBatch).map(target => target.id), configVersion: config.version }, owner);
+  assert.equal(cachedPreview.targets.length, 25);
+  assert.deepEqual(checkedDomainsInPreview, ['private-repeated.example.com', 'public-repeated.example.com'], 'Same-domain candidates reuse only this preview’s DNS decision across chunks.');
+  const realNow = Date.now, startedAt = realNow();
+  let clockOffset = 0, budgetChecks = 0;
+  const budgetStore = createSmartAnalysisStore(pool, () => owner, { ...deps, checkPublicTargets: async targets => {
+    budgetChecks++; clockOffset += 21_000;
+    return { targets: targets.slice(0, 1), excluded: targets.slice(1).map(target => ({ id: target.id, reason: 'Fixture unknown domain.' })) };
+  } });
+  try {
+    Date.now = () => startedAt + clockOffset;
+    const budgetPreview = await budgetStore.preview({ batchId: filteredBatch, batchRevision: '1', groupIds: candidates.get(filteredBatch).map(target => target.id), configVersion: config.version }, owner);
+    assert.equal(budgetChecks, 1, 'A slow DNS batch must stop further checks after the preview time budget.');
+    assert.equal(budgetPreview.targets.length, 1);
+    assert.equal(budgetPreview.excluded.filter(target => target.reason.includes('时间上限')).length, 1000);
+  } finally { Date.now = realNow; }
+  await setConfig();
   const initialBatch = await batch();
   const initial = await launch(initialBatch);
   await assert.rejects(store.get(initial.job.id, 'visitor'), e => e.status === 403);

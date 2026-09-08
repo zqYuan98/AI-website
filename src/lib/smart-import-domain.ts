@@ -2,12 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { bookmarkUrl, canonicalBookmarkUrl, MAX_BOOKMARK_BYTES, MAX_IMPORT_ITEMS, parseBookmarkHtmlDetailed, validateImportCandidate } from "./bookmark-import";
 import { LibraryInputError } from "./library-domain";
 import { RESOURCE_CATEGORIES, RESOURCE_KINDS, type LibraryResource, type PublicLibrarySnapshot } from "./resource-types";
-import type { SmartImportDecision, SmartImportFields, SmartImportFilters, SmartImportGroup, SmartImportSource, SmartImportSuggestion, SmartImportSummary, SmartImportFacets, SmartImportExistingMatch } from "./smart-import-types";
+import type { SmartImportDecision, SmartImportFields, SmartImportFilters, SmartImportGroup, SmartImportSource, SmartImportSuggestion, SmartImportSummary, SmartImportFacets, SmartImportExistingMatch, SmartImportProposal, SmartImportSuggestionMode, SmartImportResultStatus } from "./smart-import-types";
 
 export type ImportSourceRecord = SmartImportSource & {
   intent?: { decision: SmartImportDecision; fields: Partial<SmartImportFields>; categoryConfirmed: boolean };
 };
-export type ImportGroupRecord = SmartImportGroup & {
+export type ImportGroupRecord = Omit<SmartImportGroup, "proposal" | "resultStatus" | "resultReasons"> & {
   canonical: string;
   sourceIds: string[];
   sourceFolders: string[];
@@ -16,6 +16,9 @@ export type ImportGroupRecord = SmartImportGroup & {
   createdFingerprint?: string;
   firstPublishedAt?: string | null;
   existingChange?: { before: LibraryResource; afterFingerprint: string };
+  /** Binds an explicit keep decision to the relationships the owner reviewed. */
+  reviewAcknowledgement?: string;
+  suspectedScopeHash?: string;
 };
 
 function ordered(value: unknown): unknown {
@@ -118,10 +121,57 @@ export function suspectedBookmarkKey(value: string): string {
   return `${url.hostname.replace(/^www\./, "")}${url.port ? `:${url.port}` : ""}${url.pathname.replace(/\/+$/, "")}`;
 }
 
-export function regroupImportSources(sources: ImportSourceRecord[], previous: ImportGroupRecord[], library: LibraryResource[], publication: PublicLibrarySnapshot): ImportGroupRecord[] {
+export function projectImportAcceptance(group: ImportGroupRecord, mode: SmartImportSuggestionMode = "accept-preserving-manual"): SmartImportProposal {
+  const fields = { ...group.fields, tags: [...group.fields.tags] }, adoptedFields: (keyof SmartImportFields)[] = [];
+  const retainedFields = (Object.keys(group.manualFields) as (keyof SmartImportFields)[]).sort();
+  // Historical preserve imports must not acquire unaccepted suggestions merely by being displayed.
+  if (group.readOnly) return { fields, categoryConfirmed: group.categoryConfirmed, status: group.categoryConfirmed ? "organized" : "inbox", adoptedFields, retainedFields, suggestionHash: null };
+  if (mode === "accept-preserving-manual" && group.suggestion) {
+    for (const key of ["kind", "category", "tags", "description"] as const) {
+      // Presence is intentional: empty strings and empty tag arrays are owner decisions too.
+      if (Object.prototype.hasOwnProperty.call(group.manualFields, key)) continue;
+      Object.assign(fields, { [key]: key === "tags" ? [...group.suggestion.tags] : group.suggestion[key] });
+      adoptedFields.push(key);
+    }
+  }
+  Object.assign(fields, group.manualFields);
+  const categoryConfirmed = group.categoryConfirmed || adoptedFields.includes("category");
+  const suggestion = group.suggestion;
+  // Evidence wording can change after an earlier chunk adds a same-site resource. Bind semantics instead.
+  const suggestionHash = mode === "accept-preserving-manual" && suggestion ? importHash({ kind: suggestion.kind, category: suggestion.category, tags: suggestion.tags, description: suggestion.description, confidence: suggestion.confidence, source: suggestion.source }) : null;
+  return { fields, categoryConfirmed, status: categoryConfirmed ? "organized" : "inbox", adoptedFields, retainedFields, suggestionHash };
+}
+
+export function importRelationshipHash(group: ImportGroupRecord): string {
+  return importHash({ canonical: group.canonical, representativeId: group.representativeId, title: group.representative.name,
+    sources: group.sourceIds, matches: group.matches, suspectedMatches: group.suspectedMatches, suspectedScopeHash: group.suspectedScopeHash ?? null,
+    formerMatchIds: group.formerMatchIds, reviewReasons: group.reviewReasons });
+}
+
+/** One partition for the result list, counts, explicit selection and acceptance guard. */
+export function importResult(group: ImportGroupRecord): { status: SmartImportResultStatus; reasons: string[] } {
+  if (group.readOnly) return group.outcome?.kind === "skipped" || group.outcome?.kind === "undone"
+    ? { status: "skipped", reasons: [group.outcome.kind === "undone" ? "已撤回本次收藏" : "此网址已在收藏中"] }
+    : { status: "collected", reasons: [] };
+  if (group.decision === "ignore") return { status: "skipped", reasons: ["你已选择跳过，可在详情中恢复"] };
+  if (group.error) return { status: "review", reasons: [group.error] };
+  if (group.reviewRequired) return { status: "review", reasons: group.reviewReasons.length ? group.reviewReasons : ["资源关系已变化，请重新确认"] };
+  if (group.matchKind === "existing") return { status: "skipped", reasons: ["相同规范化网址已在收藏中"] };
+  if (group.matchKind === "archived") return { status: "review", reasons: ["已有收藏已归档，请明确选择恢复或跳过"] };
+  const acknowledged = group.reviewAcknowledgement === importRelationshipHash(group);
+  const reasons: string[] = [];
+  if (!acknowledged && group.matchKind === "published-only") reasons.push("此网址目前公开但未在管理库中，请确认是否重新私有收藏");
+  if (!acknowledged && (group.suspectedMatches.length || group.suspectedGroupCount)) reasons.push("存在相似网址，请比较后确认是否分别收藏");
+  if (!group.categoryConfirmed && group.suggestion?.confidence !== "clear" && group.decision !== "keep") reasons.push("分类线索不足，请修改分类或确认当前内容");
+  return reasons.length ? { status: "review", reasons: [...new Set(reasons)] } : { status: "ready", reasons: [] };
+}
+
+export function regroupImportSources(sources: ImportSourceRecord[], previous: ImportGroupRecord[], library: LibraryResource[], publication: PublicLibrarySnapshot, currentBatchId?: string): ImportGroupRecord[] {
   const exact = new Map<string, SmartImportExistingMatch[]>(), suspected = new Map<string, SmartImportExistingMatch[]>();
   const knownCategories = new Map<string, Set<SmartImportFields["category"]>>();
-  for (const resource of library) if (resource.status === "organized") {
+  // Earlier chunks of this same acceptance cannot rewrite its remaining rule proposals.
+  // These resources still participate in exact and suspected duplicate matching below.
+  for (const resource of library) if (resource.status === "organized" && (!currentBatchId || resource.importBatchId !== currentBatchId)) {
     const host = new URL(resource.url).hostname;
     if (!knownCategories.has(host)) knownCategories.set(host, new Set());
     knownCategories.get(host)!.add(resource.category);
@@ -165,7 +215,7 @@ export function regroupImportSources(sources: ImportSourceRecord[], previous: Im
       if (suspectedMatches.length === 20) break;
     }
     const vanished = Boolean(old?.formerMatchIds.length && !old.formerMatchIds.some(matchId => draftMatches.some(match => match.id === matchId)));
-    const reasons = [...(conflictingIntent ? ["合并后的来源有不同人工决定，请重新确认"] : []), ...(vanished ? ["原先匹配的库内资源已不存在，请重新确认"] : [])];
+    const reasons = [...new Set([...(old?.reviewRequired ? old.reviewReasons : []), ...(conflictingIntent ? ["合并后的来源有不同人工决定，请重新确认"] : []), ...(vanished ? ["原先匹配的库内资源已不存在，请重新确认"] : [])])];
     const group: ImportGroupRecord = {
       id, canonical, revision: old?.revision ?? "1", sourceIds: members.map(source => source.id), sourceFolders: [...new Set(members.map(source => source.sourceFolder))], representativeId: representative.id,
       representative, sourceCount: members.length, sourcesPreview: members.slice(0, 3),
@@ -179,16 +229,19 @@ export function regroupImportSources(sources: ImportSourceRecord[], previous: Im
       outcome: old?.outcome ?? null, error: old?.error ?? null, readOnly: false, manualFields,
       formerMatchIds: vanished ? old!.formerMatchIds : draftMatches.map(match => match.id),
       firstPublishedAt: old?.firstPublishedAt ?? null,
+      reviewAcknowledgement: old?.reviewAcknowledgement,
     };
     return group;
   });
   const peers = new Map<string, ImportGroupRecord[]>();
   for (const group of groups) { const key = suspectedBookmarkKey(group.representative.url); if (!peers.has(key)) peers.set(key, []); peers.get(key)!.push(group); }
   const oldById = new Map(previous.map(group => [group.id, group]));
+  const peerHashes = new Map([...peers].map(([key, related]) => [key, importHash(related.map(group => ({ id: group.id, canonical: group.canonical })))]));
   for (const group of groups) {
     if (!group.readOnly) {
       const related = peers.get(suspectedBookmarkKey(group.representative.url))!;
       group.suspectedGroupCount = related.length - 1;
+      group.suspectedScopeHash = peerHashes.get(suspectedBookmarkKey(group.representative.url));
       group.suspectedGroups = related.slice(0, 21).filter(peer => peer.id !== group.id).slice(0, 20).map(peer => ({ id: peer.id, name: peer.fields.name, url: peer.representative.url, reason: "本批另有协议、主机前缀、斜杠或参数不同的链接，可保留两条，请分别判断" }));
     }
     const old = oldById.get(group.id);
@@ -199,7 +252,8 @@ export function regroupImportSources(sources: ImportSourceRecord[], previous: Im
 
 export function importGroupDto(group: ImportGroupRecord): SmartImportGroup {
   const { id, revision, representativeId, representative, sourceCount, sourcesPreview, matchKind, matches, suspectedMatches, suspectedGroups, suspectedGroupCount, decision, fields, categoryConfirmed, suggestion, reviewRequired, reviewReasons, outcome, error, readOnly } = group;
-  return { id, revision, representativeId, representative: sourceDto(representative), sourceCount, sourcesPreview: sourcesPreview.map(sourceDto), matchKind, matches, suspectedMatches, suspectedGroups, suspectedGroupCount, decision, fields, categoryConfirmed, suggestion, reviewRequired, reviewReasons, outcome, error, readOnly };
+  const result = importResult(group);
+  return { id, revision, representativeId, representative: sourceDto(representative), sourceCount, sourcesPreview: sourcesPreview.map(sourceDto), matchKind, matches, suspectedMatches, suspectedGroups, suspectedGroupCount, decision, fields, categoryConfirmed, suggestion, reviewRequired, reviewReasons, outcome, error, readOnly, proposal: projectImportAcceptance(group), resultStatus: result.status, resultReasons: result.reasons };
 }
 export function sourceDto(source: SmartImportSource): SmartImportSource {
   const { id, ordinal, groupId, name, url, sourceFolder, createdAt, excluded, invalidReason } = source;
@@ -208,33 +262,38 @@ export function sourceDto(source: SmartImportSource): SmartImportSource {
 export function importSummary(sources: ImportSourceRecord[], groups: ImportGroupRecord[]): SmartImportSummary {
   const validSources = sources.filter(source => !source.excluded && !source.invalidReason).length;
   const count = (fn: (group: ImportGroupRecord) => boolean) => groups.filter(fn).length;
+  const resultCounts = { ready: 0, review: 0, skipped: 0, collected: 0 };
+  let skippedSources = sources.length - validSources;
+  for (const group of groups) { const result = importResult(group); resultCounts[result.status]++; if (result.status === "skipped") skippedSources += group.sourceCount; }
   return { rawTotal: sources.length, validSources, invalidSources: sources.filter(source => !source.excluded && Boolean(source.invalidReason)).length,
     excludedSources: sources.filter(source => source.excluded).length, duplicateSources: validSources - groups.length, groupTotal: groups.length,
     newGroups: count(group => group.matchKind === "new"), existingGroups: count(group => group.matchKind === "existing"), archivedGroups: count(group => group.matchKind === "archived"), publishedOnlyGroups: count(group => group.matchKind === "published-only"),
     completedGroups: count(group => group.readOnly), ignoredGroups: count(group => !group.readOnly && group.decision === "ignore"), failedGroups: count(group => !group.readOnly && group.decision !== "ignore" && Boolean(group.error)),
-    pendingGroups: count(group => !group.readOnly && group.decision !== "ignore" && !group.error), keptGroups: count(group => !group.readOnly && group.decision === "keep"), createdResources: count(group => group.outcome?.kind === "created") };
+    pendingGroups: count(group => !group.readOnly && group.decision !== "ignore" && !group.error), keptGroups: count(group => !group.readOnly && group.decision === "keep"), createdResources: count(group => group.outcome?.kind === "created"), resultCounts, skippedSources };
 }
 
 export function filteredImportGroups(groups: ImportGroupRecord[], filters: SmartImportFilters): ImportGroupRecord[] {
   const query = filters.search?.trim().toLowerCase();
   return groups.filter(group => {
+    if (filters.resultStatus && importResult(group).status !== filters.resultStatus) return false;
     if (filters.view === "invalid" || filters.view === "excluded") return false;
     if (filters.view === "duplicates" && group.matchKind === "new" && group.sourceCount === 1) return false;
     if (filters.view === "suggested" && (group.suggestion?.confidence !== "clear" || group.readOnly || group.reviewRequired || group.suspectedMatches.length || group.suspectedGroupCount || group.matchKind !== "new")) return false;
     if (filters.view === "review" && (group.readOnly || group.decision === "ignore" || (group.suggestion?.confidence === "clear" && !group.reviewRequired && !group.suspectedMatches.length && !group.suspectedGroupCount && group.matchKind !== "published-only"))) return false;
     if (filters.decision && filters.decision !== group.decision) return false;
-    if (filters.kind && filters.kind !== group.fields.kind) return false;
-    if (filters.category && filters.category !== (group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category)) return false;
+    const proposed = filters.resultStatus ? projectImportAcceptance(group).fields : null;
+    if (filters.kind && filters.kind !== (proposed?.kind ?? group.fields.kind)) return false;
+    if (filters.category && filters.category !== (proposed?.category ?? (group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category))) return false;
     if (filters.folder && !group.sourceFolders.includes(filters.folder)) return false;
     if (filters.domain && new URL(group.representative.url).hostname !== filters.domain) return false;
     return !query || `${group.fields.name} ${group.representative.url} ${group.sourceFolders.join(" ")}`.toLowerCase().includes(query);
   });
 }
-export function importFacets(sources: ImportSourceRecord[], groups: ImportGroupRecord[]): SmartImportFacets {
+export function importFacets(sources: ImportSourceRecord[], groups: ImportGroupRecord[], useProposals = false): SmartImportFacets {
   const facets = (entries: [string, string][]) => {
     const buckets = new Map<string, Set<string>>();
     for (const [value, id] of entries) if (value) buckets.set(value, new Set([...(buckets.get(value) ?? []), id]));
     return [...buckets].map(([value, ids]) => ({ value, count: ids.size })).sort((a, b) => a.value.localeCompare(b.value));
   };
-  return { folders: facets(sources.filter(source => source.groupId).map(source => [source.sourceFolder, source.groupId!])), domains: facets(groups.map(group => [new URL(group.representative.url).hostname, group.id])), kinds: facets(groups.map(group => [group.fields.kind, group.id])), categories: facets(groups.map(group => [group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category, group.id])) };
+  return { folders: facets(sources.filter(source => source.groupId).map(source => [source.sourceFolder, source.groupId!])), domains: facets(groups.map(group => [new URL(group.representative.url).hostname, group.id])), kinds: facets(groups.map(group => [useProposals ? projectImportAcceptance(group).fields.kind : group.fields.kind, group.id])), categories: facets(groups.map(group => [useProposals ? projectImportAcceptance(group).fields.category : group.categoryConfirmed ? group.fields.category : group.suggestion?.category ?? group.fields.category, group.id])) };
 }

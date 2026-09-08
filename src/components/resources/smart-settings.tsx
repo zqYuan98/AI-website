@@ -75,7 +75,7 @@ export function SmartSettings() {
   const canEnable = Boolean(config?.encryptionReady && config.hasKey && config.testedVersion === config.version && !dirty);
 
   return <>
-    <header className={styles.pageHeader}><div><p className={styles.eyebrow}>A LITTLE HELP, ON YOUR TERMS</p><h1>智能筛选</h1><p>接入自己的模型服务，让分类建议更进一步。</p></div><Link href="/tools/manage/imports" className={styles.secondaryButton}>回到导入记录 <span aria-hidden="true">→</span></Link></header>
+    <header className={styles.pageHeader}><div><p className={styles.eyebrow}>A LITTLE HELP, ON YOUR TERMS</p><h1>AI 连接设置</h1><p>接入自己的模型服务，让分类建议更进一步。</p></div><Link href="/tools/manage/imports" className={styles.secondaryButton}>回到导入记录 <span aria-hidden="true">→</span></Link></header>
     <div className={styles.settingsIntro}><div><strong>规则先行，模型按需。</strong><p>不开启外部 API，也能去重、分类和私有入库。启用后，每次分析仍会先展示实际发送的标题与域名。</p></div><span className={styles.statusBadge}>{config?.enabled ? "已启用" : "未启用"}</span></div>
     {!dialog ? <SmartFeedback error={error} status={errorStatus} message={message} onRefresh={!config ? reload : undefined} /> : null}
     {loading ? <p className={styles.loading} role="status">正在读取连接设置…</p> : config ? <form className={styles.settingsForm} onSubmit={save}><fieldset disabled={Boolean(busy)} className={styles.settingsFields}>

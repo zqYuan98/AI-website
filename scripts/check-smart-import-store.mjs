@@ -222,6 +222,131 @@ try {
   await batchWrite(regroupBatch.batch.id, { action: "edit-source", sourceId: excludedSources.invalidSources[0].id, changes: { excluded: false } });
   assert.equal((await get(regroupBatch.batch.id)).groups[0].sourceCount, 2);
 
+  // One acceptance commits the displayed suggestion and explicit owner fields atomically.
+  const acceptanceMode = "accept-preserving-manual";
+  const acceptancePreview = (id, groupIds) => batchWrite(id, { action: "commit-preview", groupIds, suggestionMode: acceptanceMode });
+  const accept = (id, proposal, receiptId = requestId()) => handle({ action: "commit", batchId: id, batchRevision: proposal.batchRevision, libraryRevision: proposal.libraryRevision, groupIds: proposal.groupIds, confirmation: proposal.confirmation, requestId: receiptId, suggestionMode: acceptanceMode });
+  const acceptanceBatch = await create("https://github.com/atomic-acceptance\nhttps://unclear-acceptance.example.com/one");
+  const acceptanceId = acceptanceBatch.batch.id;
+  await db.query("UPDATE library_private.import_batches SET metadata=metadata #- '{summary,resultCounts}' #- '{summary,skippedSources}' WHERE id=$1", [acceptanceId]);
+  const legacyListed = (await handle({ action: "list" })).batches.find(batch => batch.id === acceptanceId);
+  assert.deepEqual(legacyListed.summary.resultCounts, { ready: 1, review: 1, skipped: 0, collected: 0 });
+  assert.equal(legacyListed.revision, acceptanceBatch.batchRevision, "Historical result-count DTO upgrades do not mutate a batch.");
+  let acceptancePage = await get(acceptanceId);
+  const acceptanceGroup = acceptancePage.groups.find(group => group.representative.url.includes("github.com"));
+  const unclearGroup = acceptancePage.groups.find(group => group.id !== acceptanceGroup.id);
+  const acceptanceCapture = await store.claimTargets({ batchId: acceptanceId, batchRevision: acceptancePage.batchRevision, groupIds: [acceptanceGroup.id] }, owner);
+  await store.applySuggestions({ batchId: acceptanceId, results: [{ id: acceptanceGroup.id, groupRevision: acceptanceCapture.targets[0].groupRevision,
+    suggestion: { kind: "tool", category: "AI 与自动化", tags: ["model-tag"], description: "Model description", reason: "Fixture suggestion", confidence: "clear", source: "model" } }] }, owner);
+  await batchWrite(acceptanceId, { action: "decide", groupIds: [acceptanceGroup.id], fields: { name: "Owner accepted name", category: "写作与知识", tags: [], description: "" } });
+  acceptancePage = await get(acceptanceId);
+  const displayed = acceptancePage.groups.find(group => group.id === acceptanceGroup.id);
+  assert.equal(displayed.decision, "defer", "The simplified path must not need a preliminary keep operation.");
+  assert.deepEqual(displayed.proposal.fields, { name: "Owner accepted name", kind: "tool", category: "写作与知识", tags: [], description: "" });
+  assert.deepEqual(displayed.proposal.adoptedFields, ["kind"]);
+  const fixedSelection = await handle({ action: "select", batchId: acceptanceId, batchRevision: acceptancePage.batchRevision, filters: { resultStatus: "ready" } });
+  assert.deepEqual(fixedSelection.groupIds, [acceptanceGroup.id]);
+  const toolResults = await handle({ action: "get", batchId: acceptanceId, filters: { resultStatus: "ready", kind: "tool" } });
+  assert.equal(toolResults.total, 1);
+  assert.equal(toolResults.facets.kinds.find(facet => facet.value === "tool").count, 1, "New result filters and facets use the same projected kind as the displayed row.");
+  for (const state of ["ready", "review", "skipped", "collected"]) {
+    const filtered = await handle({ action: "get", batchId: acceptanceId, filters: { resultStatus: state } });
+    assert.equal(filtered.total, filtered.batch.summary.resultCounts[state]);
+    assert(filtered.groups.every(group => group.resultStatus === state));
+  }
+  await assert.rejects(() => handle({ action: "get", batchId: acceptanceId, filters: { resultStatus: "invented" } }), status(400));
+  await assert.rejects(() => batchWrite(acceptanceId, { action: "commit-preview", groupIds: fixedSelection.groupIds, suggestionMode: "overwrite-owner" }), status(400));
+  const stagedBeforePreview = (await db.query("SELECT data FROM library_private.import_groups WHERE batch_id=$1 ORDER BY id", [acceptanceId])).rows;
+  let acceptingPreview = await acceptancePreview(acceptanceId, fixedSelection.groupIds);
+  const repeatedAcceptancePreview = await handle({ action: "commit-preview", batchId: acceptanceId, batchRevision: acceptingPreview.batchRevision, groupIds: fixedSelection.groupIds, suggestionMode: acceptanceMode });
+  assert.deepEqual(repeatedAcceptancePreview, acceptingPreview, "Strict Mode / aborted reads can replay the same acceptance preview without changing revisions.");
+  assert.deepEqual(acceptingPreview.items[0].proposal, displayed.proposal);
+  assert.deepEqual((await db.query("SELECT data FROM library_private.import_groups WHERE batch_id=$1 ORDER BY id", [acceptanceId])).rows, stagedBeforePreview);
+  await assert.rejects(() => commit(acceptanceId, acceptingPreview), status(409), "An acceptance confirmation cannot be submitted with legacy preserve semantics.");
+  // A changed suggestion must invalidate an earlier confirmation even if all overwritten fields were retained manually.
+  const latestCapture = await store.claimTargets({ batchId: acceptanceId, batchRevision: acceptingPreview.batchRevision, groupIds: [acceptanceGroup.id] }, owner);
+  await store.applySuggestions({ batchId: acceptanceId, results: [{ id: acceptanceGroup.id, groupRevision: latestCapture.targets[0].groupRevision,
+    suggestion: { kind: "tool", category: "设计与创作", tags: ["another-model-tag"], description: "Changed model description", reason: "Changed fixture evidence", confidence: "clear", source: "model" } }] }, owner);
+  await assert.rejects(() => accept(acceptanceId, acceptingPreview), status(409));
+  const refreshedAcceptance = await acceptancePreview(acceptanceId, fixedSelection.groupIds);
+  assert.deepEqual(refreshedAcceptance.items[0].proposal.fields, acceptingPreview.items[0].proposal.fields);
+  assert.notEqual(refreshedAcceptance.items[0].planHash, acceptingPreview.items[0].planHash);
+  await assert.rejects(() => accept(acceptanceId, { ...acceptingPreview, batchRevision: refreshedAcceptance.batchRevision }), status(409));
+  acceptingPreview = refreshedAcceptance;
+  const reasonOnlyCapture = await store.claimTargets({ batchId: acceptanceId, batchRevision: acceptingPreview.batchRevision, groupIds: [acceptanceGroup.id] }, owner);
+  await store.applySuggestions({ batchId: acceptanceId, results: [{ id: acceptanceGroup.id, groupRevision: reasonOnlyCapture.targets[0].groupRevision,
+    suggestion: { kind: "tool", category: "设计与创作", tags: ["another-model-tag"], description: "Changed model description", reason: "Only evidence wording changed", confidence: "clear", source: "model" } }] }, owner);
+  const reasonOnlyPreview = await acceptancePreview(acceptanceId, fixedSelection.groupIds);
+  assert.equal(reasonOnlyPreview.items[0].planHash, acceptingPreview.items[0].planHash, "Changing only evidence wording must not interrupt an already confirmed multi-chunk proposal.");
+  acceptingPreview = reasonOnlyPreview;
+  const beforeAcceptance = await cloud.handle({ action: "backup" }, owner);
+  const beforeAcceptanceGroups = (await db.query("SELECT data FROM library_private.import_groups WHERE batch_id=$1 ORDER BY id", [acceptanceId])).rows;
+  const beforeAcceptancePublic = (await db.query("SELECT snapshot FROM library_public.snapshot")).rows[0].snapshot;
+  await db.exec("ALTER TABLE library_private.import_receipts ADD CONSTRAINT acceptance_receipt_failure CHECK (request_id <> 'acceptance-force-failure')");
+  await assert.rejects(() => accept(acceptanceId, acceptingPreview, "acceptance-force-failure"));
+  assert.deepEqual(await cloud.handle({ action: "backup" }, owner), beforeAcceptance);
+  assert.deepEqual((await db.query("SELECT data FROM library_private.import_groups WHERE batch_id=$1 ORDER BY id", [acceptanceId])).rows, beforeAcceptanceGroups, "Failure after adoption must roll back staged manual fields, outcome and the resource together.");
+  await db.exec("ALTER TABLE library_private.import_receipts DROP CONSTRAINT acceptance_receipt_failure");
+  const accepted = await accept(acceptanceId, acceptingPreview, "acceptance-force-failure");
+  assert.equal(accepted.receipt.items[0].status, "created");
+  const acceptedReplay = await accept(acceptanceId, acceptingPreview, "acceptance-force-failure");
+  assert.equal(acceptedReplay.replayed, true);
+  const acceptedResource = (await cloud.handle({ action: "list" }, owner)).resources.find(resource => resource.id === accepted.receipt.items[0].resourceId);
+  for (const [key, value] of Object.entries(displayed.proposal.fields)) assert.deepEqual(acceptedResource[key], value);
+  assert.equal(acceptedResource.visibility, "private"); assert.equal(acceptedResource.status, "organized");
+  assert.equal(acceptedResource.featured, false); assert.equal(acceptedResource.usedByVitamin, false);
+  assert.deepEqual((await db.query("SELECT snapshot FROM library_public.snapshot")).rows[0].snapshot, beforeAcceptancePublic);
+  acceptancePage = await get(acceptanceId);
+  assert.equal(acceptancePage.groups.find(group => group.id === acceptanceGroup.id).resultStatus, "collected");
+  assert.equal(acceptancePage.batch.summary.resultCounts.collected, 1);
+  assert.equal(acceptancePage.batch.summary.resultCounts.review, 1);
+  assert.equal(acceptancePage.batch.summary.resultCounts.skipped, 0);
+  assert.equal(acceptancePage.groups.find(group => group.id === unclearGroup.id).outcome, null);
+  const unclearPreview = await acceptancePreview(acceptanceId, [unclearGroup.id]);
+  assert.equal(unclearPreview.items[0].disposition, "needs-review");
+  await accept(acceptanceId, unclearPreview);
+  await batchWrite(acceptanceId, { action: "decide", groupIds: [unclearGroup.id], fields: { category: "学习与研究" } });
+  assert.equal((await get(acceptanceId)).groups.find(group => group.id === unclearGroup.id).resultStatus, "ready", "An attempted commit cannot turn an unclear category into a sticky structural review flag.");
+  assert.deepEqual(fixedSelection.groupIds, [acceptanceGroup.id], "Later changes do not silently expand an already captured selection.");
+
+  const relationBatch = await create("http://related-acceptance.example.com/github\nhttps://related-acceptance.example.com/github");
+  const relationPage = await get(relationBatch.batch.id), relationGroup = relationPage.groups[0];
+  await batchWrite(relationBatch.batch.id, { action: "decide", groupIds: [relationGroup.id], fields: { category: "开发与技术" } });
+  assert.equal((await acceptancePreview(relationBatch.batch.id, [relationGroup.id])).items[0].disposition, "needs-review");
+  await batchWrite(relationBatch.batch.id, { action: "decide", groupIds: [relationGroup.id], decision: "keep" });
+  assert.equal((await acceptancePreview(relationBatch.batch.id, [relationGroup.id])).items[0].disposition, "create");
+  await batchWrite(relationBatch.batch.id, { action: "edit-source", sourceId: relationPage.groups[1].representativeId, changes: { url: "https://related-acceptance.example.com/github?changed=1" } });
+  assert.equal((await acceptancePreview(relationBatch.batch.id, [relationGroup.id])).items[0].disposition, "needs-review", "A new relationship requires a fresh owner acknowledgement.");
+
+  const fixedBatch = await create(Array.from({ length: 125 }, (_, index) => `https://same-site-acceptance.example.com/github/article/${index}`).join("\n"));
+  const fixedPage = await get(fixedBatch.batch.id);
+  const allReady = await handle({ action: "select", batchId: fixedBatch.batch.id, batchRevision: fixedPage.batchRevision, filters: { resultStatus: "ready" } });
+  assert.equal(allReady.groupIds.length, 125, "Default ready selection includes the other pages.");
+  const fixedRemaining = allReady.groupIds.slice(100);
+  const allReadyPreview = await acceptancePreview(fixedBatch.batch.id, allReady.groupIds);
+  await accept(fixedBatch.batch.id, await acceptancePreview(fixedBatch.batch.id, allReady.groupIds.slice(0, 100)));
+  const reopened = await handle({ action: "get", batchId: fixedBatch.batch.id, filters: { resultStatus: "ready" } });
+  assert.equal(reopened.total, 25); assert.equal(reopened.batch.summary.resultCounts.collected, 100);
+  assert.deepEqual(new Set(reopened.groups.map(group => group.id)), new Set(fixedRemaining));
+  const remainingPreview = await acceptancePreview(fixedBatch.batch.id, fixedRemaining);
+  const confirmedHashes = new Map(allReadyPreview.items.map(item => [item.groupId, item.planHash]));
+  assert(remainingPreview.items.every(item => confirmedHashes.get(item.groupId) === item.planHash), "Earlier same-site additions can change rule evidence wording without changing the confirmed remaining proposal.");
+  await accept(fixedBatch.batch.id, remainingPreview);
+  assert.equal((await get(fixedBatch.batch.id)).batch.summary.resultCounts.collected, 125);
+
+  const mixedBatch = await create(Array.from({ length: 125 }, (_, index) => `https://mixed-site-acceptance.example.com/github/article/${index}`).join("\n"));
+  const mixedPage = await get(mixedBatch.batch.id);
+  const mixedSelection = await handle({ action: "select", batchId: mixedBatch.batch.id, batchRevision: mixedPage.batchRevision, filters: { resultStatus: "ready" } });
+  await batchWrite(mixedBatch.batch.id, { action: "decide", groupIds: mixedSelection.groupIds.slice(0, 100), fields: { category: "写作与知识" } });
+  const mixedApproved = await acceptancePreview(mixedBatch.batch.id, mixedSelection.groupIds);
+  const mixedHashes = new Map(mixedApproved.items.map(item => [item.groupId, item.planHash]));
+  await accept(mixedBatch.batch.id, await acceptancePreview(mixedBatch.batch.id, mixedSelection.groupIds.slice(0, 100)));
+  const mixedRemaining = await acceptancePreview(mixedBatch.batch.id, mixedSelection.groupIds.slice(100));
+  assert(mixedRemaining.items.every(item => item.proposal.fields.category === "开发与技术"));
+  assert(mixedRemaining.items.every(item => item.planHash === mixedHashes.get(item.groupId)), "This batch's first 100 manually classified additions cannot rewrite its remaining same-site rules.");
+  await accept(mixedBatch.batch.id, mixedRemaining);
+  assert.equal((await get(mixedBatch.batch.id)).batch.summary.resultCounts.collected, 125);
+
   // Real SQL ACL, independently of a read-only transaction setting.
   await db.exec("CREATE ROLE smart_import_public_test; GRANT USAGE ON SCHEMA library_public TO smart_import_public_test; GRANT SELECT ON library_public.snapshot TO smart_import_public_test; SET ROLE smart_import_public_test;");
   for (const table of ["import_batches", "import_sources", "import_groups", "import_receipts"]) await assert.rejects(() => db.query(`SELECT * FROM library_private.${table}`), error => error.code === "42501");

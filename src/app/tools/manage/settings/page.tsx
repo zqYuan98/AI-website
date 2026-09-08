@@ -6,7 +6,7 @@ import { cloudLibraryEnabled } from "@/lib/server/config";
 import { SmartSettings } from "@/components/resources/smart-settings";
 import { SmartImportShell } from "@/components/resources/smart-import-shell";
 
-export const metadata: Metadata = { title: "智能筛选设置 · 我的资源库", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "AI 连接设置 · 我的资源库", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default async function SmartSettingsPage() {

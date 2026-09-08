@@ -6,6 +6,8 @@ export type SmartImportDecision = "defer" | "keep" | "ignore";
 export type SmartImportBatchStatus = "reviewing" | "paused" | "partial" | "completed" | "cancelled" | "failed";
 export type SmartImportView = "review" | "suggested" | "duplicates" | "invalid" | "excluded" | "all";
 export type SmartImportMatchKind = "new" | "existing" | "archived" | "published-only";
+export type SmartImportResultStatus = "ready" | "review" | "skipped" | "collected";
+export type SmartImportSuggestionMode = "preserve" | "accept-preserving-manual";
 export type SmartImportOutcomeKind = "created" | "linked" | "restored" | "merged" | "skipped" | "undone";
 
 export type SmartImportSuggestion = {
@@ -20,6 +22,15 @@ export type SmartImportSuggestion = {
 
 export type SmartImportFields = Pick<LibraryResource, "name" | "kind" | "category" | "tags" | "description">;
 export type SmartImportMergeFields = SmartImportFields & Pick<LibraryResource, "notes">;
+/** The exact private resource proposal. Explicit owner values, including empty values, win. */
+export type SmartImportProposal = {
+  fields: SmartImportFields;
+  categoryConfirmed: boolean;
+  status: "organized" | "inbox";
+  adoptedFields: (keyof SmartImportFields)[];
+  retainedFields: (keyof SmartImportFields)[];
+  suggestionHash: string | null;
+};
 
 export type SmartImportSource = {
   id: string;
@@ -72,6 +83,9 @@ export type SmartImportGroup = {
   outcome: SmartImportOutcome | null;
   error: string | null;
   readOnly: boolean;
+  proposal: SmartImportProposal;
+  resultStatus: SmartImportResultStatus;
+  resultReasons: string[];
 };
 
 export type SmartImportSummary = {
@@ -95,6 +109,10 @@ export type SmartImportSummary = {
   failedGroups: number;
   keptGroups: number;
   createdResources: number;
+  /** Mutually exclusive group counts; invalid/excluded sources remain separate source counts. */
+  resultCounts: Record<SmartImportResultStatus, number>;
+  /** Source unit: all skipped-group origins plus invalid and excluded sources. */
+  skippedSources: number;
 };
 
 export type SmartImportBatch = {
@@ -110,6 +128,7 @@ export type SmartImportBatch = {
 
 export type SmartImportFilters = {
   view?: SmartImportView;
+  resultStatus?: SmartImportResultStatus;
   search?: string;
   folder?: string;
   domain?: string;
@@ -165,6 +184,8 @@ export type SmartImportCommitItem = {
   disposition: "create" | "skip-existing" | "already-completed" | "needs-review" | "invalid";
   existingResourceId: string | null;
   reason: string | null;
+  /** Added for acceptance mode; omitted for the legacy preserve contract. */
+  proposal?: SmartImportProposal;
 };
 
 export type SmartImportCommitPreview = SmartImportBatchContext & {
@@ -234,8 +255,8 @@ export type SmartImportRequest =
   | (BatchWrite & { action: "edit-source"; sourceId: string; changes: Partial<Pick<SmartImportSource, "name" | "url" | "sourceFolder" | "createdAt" | "excluded">> })
   | (BatchWrite & { action: "representative"; groupId: string; sourceId: string })
   | (BatchWrite & { action: "refresh" | "pause" | "resume" | "cancel" | "delete" })
-  | (BatchWrite & { action: "commit-preview"; groupIds: string[] })
-  | (LibraryWrite & { action: "commit"; groupIds: string[] })
+  | (BatchWrite & { action: "commit-preview"; groupIds: string[]; suggestionMode?: SmartImportSuggestionMode })
+  | (LibraryWrite & { action: "commit"; groupIds: string[]; suggestionMode?: SmartImportSuggestionMode })
   | (BatchWrite & Resolution & { action: "resolve-preview" })
   | (LibraryWrite & Resolution & { action: "resolve" })
   | (BatchWrite & { action: "undo-preview" })

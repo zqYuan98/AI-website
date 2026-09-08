@@ -8,6 +8,8 @@ import type { ApiConfigView, ApiSettings, ModelSuggestion, ModelUsage } from "@/
 import type { SmartImportAnalysisCapture, SmartImportAnalysisTarget, SmartImportSuggestionResult, SmartImportSuggestionsApplied } from "@/lib/smart-import-types";
 
 const MAX_CANDIDATES = 500;
+const PREVIEW_DNS_CHUNK = 20;
+const PREVIEW_DNS_BUDGET_MS = 20_000;
 type Target = SmartImportAnalysisTarget & { status: "pending" | "working" | "succeeded" | "ignored" | "failed"; requestId?: string };
 type JobState = {
   confirmation: string; config: AnalysisDestination; settings: ApiSettings; targets: Target[]; status: AnalysisStatus;
@@ -100,10 +102,30 @@ export function createSmartAnalysisStore(pool: LibraryPool, owner: () => string,
     enabledConfig(config, input.configVersion);
     const capture = await deps.capture({ batchId, batchRevision, groupIds }, ownerId);
     const maximum = Math.min(MAX_CANDIDATES, config.settings.batchSize * config.settings.maxRequests);
-    const checked = await deps.checkPublicTargets(capture.targets.slice(0, maximum));
-    const targets = checked.targets;
-    const excluded = [...capture.excluded, ...checked.excluded, ...capture.targets.slice(maximum).map(target => ({ id: target.id, reason: "超过本次分析条数或请求数限制，可下次继续。" }))];
-    if (!targets.length) throw new LibraryInputError("所选条目没有适合发送到外部模型的内容，可继续手工整理。");
+    const targets: SmartImportAnalysisTarget[] = [], excluded = [...capture.excluded];
+    // Filter before filling the send limit. A private/unknown prefix must not consume all 500 slots.
+    // Cache only within this preview; start and transport still recheck DNS independently.
+    const domains = new Map<string, string | null>(), deadline = Date.now() + PREVIEW_DNS_BUDGET_MS;
+    let cursor = 0;
+    while (cursor < capture.targets.length && targets.length < maximum && Date.now() < deadline) {
+      const chunk = capture.targets.slice(cursor, cursor + PREVIEW_DNS_CHUNK);
+      const unknown = [...new Map(chunk.filter(target => !domains.has(target.domain)).map(target => [target.domain, target])).values()];
+      if (unknown.length) {
+        const checked = await deps.checkPublicTargets(unknown);
+        const allowed = new Set(checked.targets.map(target => target.id)), reasons = new Map(checked.excluded.map(target => [target.id, target.reason]));
+        for (const target of unknown) domains.set(target.domain, allowed.has(target.id) ? null : reasons.get(target.id) ?? "域名无法确认指向公网，仅保留规则建议与手工整理。");
+      }
+      for (const target of chunk) {
+        cursor++;
+        if (targets.length >= maximum) { excluded.push({ id: target.id, reason: "超过本次分析条数或请求数限制，可下次继续。" }); continue; }
+        const reason = domains.get(target.domain);
+        if (reason) excluded.push({ id: target.id, reason });
+        else targets.push(target);
+      }
+    }
+    const remainingReason = targets.length >= maximum ? "超过本次分析条数或请求数限制，可下次继续。" : "本轮域名检查已达到时间上限，尚未检查的条目可下次继续。";
+    excluded.push(...capture.targets.slice(cursor).map(target => ({ id: target.id, reason: remainingReason })));
+    if (!targets.length) throw new LibraryInputError(cursor < capture.targets.length ? "本轮域名检查已达到时间上限，尚有条目未检查，请选择较小范围后继续。" : "所选条目没有适合发送到外部模型的内容，可继续手工整理。");
     let estimatedCost: number | null = 0;
     for (let index = 0; index < targets.length; index += config.settings.batchSize) {
       const estimate = estimateAnalysisCost(config.settings, targets.slice(index, index + config.settings.batchSize));

@@ -5,9 +5,9 @@ import type { LibraryConnection, LibraryPool } from "../cloud-library";
 import { LibraryInputError, MAX_RESOURCES, MAX_STORE_BYTES, normalizeLibraryState, normalizePublicSnapshot } from "../library-domain";
 import { canonicalBookmarkUrl } from "../bookmark-import";
 import { publicModelDomain } from "./smart-api-security";
-import { checkedImportFields, editImportSource, filteredImportGroups, importFacets, importGroupDto, importHash, importIds, importJsonbBytes, importRecord, importSummary, importText, parseImportSources, regroupImportSources, sourceDto, type ImportGroupRecord, type ImportSourceRecord } from "../smart-import-domain";
+import { checkedImportFields, editImportSource, filteredImportGroups, importFacets, importGroupDto, importHash, importIds, importJsonbBytes, importRecord, importRelationshipHash, importResult, importSummary, importText, parseImportSources, projectImportAcceptance, regroupImportSources, sourceDto, type ImportGroupRecord, type ImportSourceRecord } from "../smart-import-domain";
 import type { LibraryResource, LibraryState, PublicLibrarySnapshot } from "../resource-types";
-import type { SmartImportAnalysisCapture, SmartImportAnalysisTarget, SmartImportBatch, SmartImportBatchContext, SmartImportCommitItem, SmartImportFilters, SmartImportReceipt, SmartImportReceiptItem, SmartImportSuggestionResult, SmartImportUndoItem } from "../smart-import-types";
+import type { SmartImportAnalysisCapture, SmartImportAnalysisTarget, SmartImportBatch, SmartImportBatchContext, SmartImportCommitItem, SmartImportFilters, SmartImportReceipt, SmartImportReceiptItem, SmartImportSuggestionMode, SmartImportSuggestionResult, SmartImportUndoItem } from "../smart-import-types";
 
 type BatchRow = { id: string; owner_id: string; revision: string; metadata: Record<string, unknown>; created_at: Date | string; updated_at: Date | string };
 type Context = { client: LibraryConnection; ownerId: string; state: LibraryState; publication: PublicLibrarySnapshot; libraryRevision: string; row: BatchRow; sources: ImportSourceRecord[]; groups: ImportGroupRecord[]; initialSources: Map<string, string>; initialGroups: Map<string, string>; urlIndex?: Map<string, LibraryResource[]> };
@@ -35,10 +35,16 @@ function updateIntent(context: Context, group: ImportGroupRecord) {
 function filters(value: unknown): SmartImportFilters {
   if (value === undefined) return {};
   const input = importRecord(value);
-  if (Object.keys(input).some(key => !["view", "search", "folder", "domain", "kind", "category", "decision"].includes(key))) throw new LibraryInputError("筛选条件不正确。");
+  if (Object.keys(input).some(key => !["view", "resultStatus", "search", "folder", "domain", "kind", "category", "decision"].includes(key))) throw new LibraryInputError("筛选条件不正确。");
   for (const item of Object.values(input)) importText(item, 1000);
   if (input.view !== undefined && !["review", "suggested", "duplicates", "invalid", "excluded", "all"].includes(String(input.view))) throw new LibraryInputError("筛选视图不正确。");
+  if (input.resultStatus !== undefined && !["ready", "review", "skipped", "collected"].includes(String(input.resultStatus))) throw new LibraryInputError("整理结果筛选不正确。");
   return input as SmartImportFilters;
+}
+function suggestionMode(value: unknown): SmartImportSuggestionMode {
+  if (value === undefined || value === "preserve") return "preserve";
+  if (value === "accept-preserving-manual") return value;
+  throw new LibraryInputError("建议采纳方式不正确。");
 }
 
 export function createSmartImportStore(pool: LibraryPool, owner: () => string = configuredOwner) {
@@ -86,17 +92,22 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
     const row = (await context.client.query("UPDATE library_private.import_batches SET metadata=$1::jsonb,revision=revision+1,updated_at=now() WHERE id=$2 AND owner_id=$3 RETURNING revision::text AS revision,updated_at", [JSON.stringify(context.row.metadata), context.row.id, context.ownerId])).rows[0];
     context.row.revision = String(row.revision); context.row.updated_at = row.updated_at as Date;
   }
-  function regroup(context: Context) { context.groups = regroupImportSources(context.sources, context.groups, context.state.resources, context.publication); }
-  function plan(context: Context, group: ImportGroupRecord): SmartImportCommitItem {
+  function regroup(context: Context) { context.groups = regroupImportSources(context.sources, context.groups, context.state.resources, context.publication, context.row.id); }
+  function plan(context: Context, group: ImportGroupRecord, mode: SmartImportSuggestionMode): SmartImportCommitItem {
     if (!context.urlIndex) {
       context.urlIndex = new Map();
       for (const resource of context.state.resources) { const key = canonicalBookmarkUrl(resource.url), entries = context.urlIndex.get(key); if (entries) entries.push(resource); else context.urlIndex.set(key, [resource]); }
     }
     const matches = context.urlIndex.get(group.canonical) ?? [];
     const missing = group.formerMatchIds.length > 0 && !group.formerMatchIds.some(id => matches.some(resource => resource.id === id));
-    const disposition = group.readOnly ? "already-completed" : group.decision === "ignore" ? "invalid" : group.reviewRequired || missing ? "needs-review" : matches.length ? "skip-existing" : "create";
-    const reason = disposition === "needs-review" ? "分组或原有匹配已变化，请确认后再入库" : disposition === "invalid" ? "本组已忽略，请先恢复" : matches.length ? "提交时复查：该网址已经在库中" : group.matchKind === "published-only" ? "此链接目前公开，确认后仅重新收为私有收藏" : null;
-    return { groupId: group.id, name: group.fields.name, disposition, existingResourceId: matches[0]?.id ?? null, reason, planHash: importHash({ disposition, fields: group.fields, categoryConfirmed: group.categoryConfirmed, url: group.representative.url, sourceFolder: group.representative.sourceFolder, createdAt: group.representative.createdAt, matches: matches.map(resource => ({ id: resource.id, url: resource.url, status: resource.status })) }) };
+    const accepting = mode === "accept-preserving-manual", result = accepting ? importResult(group) : null;
+    const proposal = projectImportAcceptance(group, mode);
+    const disposition = group.readOnly ? "already-completed" : group.decision === "ignore" ? "invalid" : group.reviewRequired || missing || result?.status === "review" ? "needs-review" : matches.length ? "skip-existing" : "create";
+    const reason = disposition === "needs-review" ? result?.reasons.join("；") || "分组或原有匹配已变化，请确认后再入库" : disposition === "invalid" ? "本组已忽略，请先恢复" : matches.length ? "提交时复查：该网址已经在库中" : group.matchKind === "published-only" ? "此链接目前公开，确认后仅重新收为私有收藏" : null;
+    return { groupId: group.id, name: proposal.fields.name, disposition, existingResourceId: matches[0]?.id ?? null, reason,
+      ...(accepting ? { proposal } : {}),
+      planHash: importHash({ disposition, fields: proposal.fields, categoryConfirmed: proposal.categoryConfirmed, url: group.representative.url, sourceFolder: group.representative.sourceFolder, createdAt: group.representative.createdAt, matches: matches.map(resource => ({ id: resource.id, url: resource.url, status: resource.status })),
+        ...(accepting ? { suggestionMode: mode, proposal, relationships: importRelationshipHash(group) } : {}) }) };
   }
   function confirmation(context: Context, action: string, proposal: unknown) { return importHash({ batchId: context.row.id, batchRevision: context.row.revision, libraryRevision: context.libraryRevision, action, proposal }); }
   function checkConfirmation(input: Record<string, unknown>, expected: string) { if (input.confirmation !== expected) throw new LibraryInputError("预览已经变化，请重新核对。", 409); }
@@ -154,7 +165,15 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
       if (input.action === "list") {
         const page = pageNumber(input.page);
         const rows = (await client.query("SELECT id,revision::text AS revision,metadata,created_at,updated_at,count(*) OVER()::int AS total FROM library_private.import_batches WHERE owner_id=$1 ORDER BY created_at DESC,id LIMIT 20 OFFSET $2", [ownerId, (page - 1) * 20])).rows;
-        return { batches: rows.map(row => ({ id: row.id, revision: row.revision, ...row.metadata as object, createdAt: iso(row.created_at as Date), updatedAt: iso(row.updated_at as Date) })), page, pageSize: 20, total: Number(rows[0]?.total ?? 0) };
+        const batches = [];
+        for (const row of rows) {
+          const metadata = row.metadata as { summary?: Partial<SmartImportBatch["summary"]> };
+          // Older batches predate result counts. Upgrade their DTO by projection, never by a read-time write.
+          if (!metadata.summary?.resultCounts || metadata.summary.skippedSources === undefined) {
+            const context = await load(client, ownerId, row.id); regroup(context); batches.push(batchDto(context));
+          } else batches.push({ id: row.id, revision: row.revision, ...row.metadata as object, createdAt: iso(row.created_at as Date), updatedAt: iso(row.updated_at as Date) });
+        }
+        return { batches, page, pageSize: 20, total: Number(rows[0]?.total ?? 0) };
       }
       if (input.action === "create") {
         const current = await library(client, ownerId), id = requestId(input.requestId);
@@ -166,7 +185,7 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
         const sources = parseImportSources(input.content, input.format), batchId = `smart-${randomUUID()}`;
         const metadata = { name: importText(input.name, 160, true), format: input.format, status: "reviewing" };
         const row = (await client.query("INSERT INTO library_private.import_batches(id,owner_id,fingerprint,create_request_id,metadata) VALUES($1,$2,$3,$4,$5::jsonb) RETURNING id,owner_id,revision::text AS revision,metadata,created_at,updated_at", [batchId, ownerId, fingerprint, id, JSON.stringify(metadata)])).rows[0] as BatchRow;
-        const context: Context = { ...current, client, ownerId, row, sources, groups: regroupImportSources(sources, [], current.state.resources, current.publication), initialSources: new Map(), initialGroups: new Map() };
+        const context: Context = { ...current, client, ownerId, row, sources, groups: regroupImportSources(sources, [], current.state.resources, current.publication, batchId), initialSources: new Map(), initialGroups: new Map() };
         await persist(context);
         return { ...response(context), resumed: false };
       }
@@ -177,7 +196,7 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
         const selectedFilters = filters(input.filters), page = pageNumber(input.page), selected = filteredImportGroups(context.groups, selectedFilters);
         const sourceView = selectedFilters.view === "invalid" || selectedFilters.view === "excluded";
         const invalid = context.sources.filter(source => selectedFilters.view === "excluded" ? source.excluded : source.invalidReason && !source.excluded);
-        return { ...response(context), groups: selected.slice((page - 1) * 50, page * 50).map(importGroupDto), invalidSources: sourceView ? invalid.slice((page - 1) * 50, page * 50).map(sourceDto) : [], page, pageSize: 50, total: sourceView ? invalid.length : selected.length, facets: importFacets(context.sources, context.groups) };
+        return { ...response(context), groups: selected.slice((page - 1) * 50, page * 50).map(importGroupDto), invalidSources: sourceView ? invalid.slice((page - 1) * 50, page * 50).map(sourceDto) : [], page, pageSize: 50, total: sourceView ? invalid.length : selected.length, facets: importFacets(context.sources, context.groups, Boolean(selectedFilters.resultStatus)) };
       }
       if (input.action === "group") {
         regroup(context);
@@ -236,7 +255,13 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
           Object.assign(group.manualFields, fields); Object.assign(group.fields, group.manualFields);
           if (fields.category) group.categoryConfirmed = true;
           if (input.decision !== undefined) group.decision = input.decision as ImportGroupRecord["decision"];
-          group.reviewRequired = false; group.reviewReasons = []; group.error = null; group.formerMatchIds = group.matches.filter(match => match.location === "library").map(match => match.id);
+          // Classification edits cannot silently approve changed matches or duplicate relationships.
+          if (input.decision === "keep") {
+            group.reviewRequired = false; group.reviewReasons = [];
+            group.formerMatchIds = group.matches.filter(match => match.location === "library").map(match => match.id);
+            group.reviewAcknowledgement = importRelationshipHash(group);
+          }
+          group.error = null;
           group.revision = String(BigInt(group.revision) + BigInt(1)); updateIntent(context, group);
         }
         await persist(context); return response(context);
@@ -255,7 +280,7 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
       }
       if (input.action === "commit-preview") {
         regroup(context);
-        const groups = groupsByIds(context, input.groupIds), items = groups.map(group => plan(context, group));
+        const mode = suggestionMode(input.suggestionMode), groups = groupsByIds(context, input.groupIds), items = groups.map(group => plan(context, group, mode));
         return { ...response(context), groupIds: groups.map(group => group.id), items, confirmation: confirmation(context, "commit", items) };
       }
       if (input.action === "resolve-preview" || input.action === "resolve") {
@@ -271,7 +296,7 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
       if (input.action === "commit") {
         // Recompute the same read-only proposal used by preview, under the shared write lock.
         regroup(context);
-        const groups = groupsByIds(context, input.groupIds, 100), plans = groups.map(group => plan(context, group));
+        const mode = suggestionMode(input.suggestionMode), groups = groupsByIds(context, input.groupIds, 100), plans = groups.map(group => plan(context, group, mode));
         checkConfirmation(input, confirmation(context, "commit", plans));
         const results: SmartImportReceiptItem[] = [];
         let bytes = importJsonbBytes(context.state);
@@ -280,14 +305,19 @@ export function createSmartImportStore(pool: LibraryPool, owner: () => string = 
           if (proposed.disposition !== "create") {
             const status = proposed.disposition === "already-completed" ? "already-completed" : proposed.disposition === "skip-existing" ? "skipped" : proposed.disposition === "needs-review" ? "needs-review" : "failed";
             if (status === "skipped") { group.outcome = { kind: "skipped", resourceId: proposed.existingResourceId, completedAt: now() }; group.readOnly = true; }
-            if (status === "needs-review") { group.reviewRequired = true; group.reviewReasons = [proposed.reason!]; }
+            if (status === "needs-review" && mode === "preserve") { group.reviewRequired = true; group.reviewReasons = [proposed.reason!]; }
             results.push({ groupId: group.id, status, resourceId: group.outcome?.resourceId ?? proposed.existingResourceId, reason: proposed.reason }); continue;
           }
           const timestamp = now();
-          const resource: LibraryResource = { id: `saved-${randomUUID()}`, ...group.fields, url: group.representative.url, icon: "", subcategory: "", recommendation: "", audience: "", usage: "", boundary: "", alternatives: [], relatedHref: "", featured: false, usedByVitamin: false, updatedAt: timestamp, visibility: "private", status: group.categoryConfirmed ? "organized" : "inbox", pinned: false, notes: "", source: "浏览器书签", sourceFolder: group.representative.sourceFolder, createdAt: group.representative.createdAt, importedAt: timestamp, importBatchId: context.row.id };
+          const proposal = proposed.proposal ?? projectImportAcceptance(group, "preserve");
+          const resource: LibraryResource = { id: `saved-${randomUUID()}`, ...proposal.fields, url: group.representative.url, icon: "", subcategory: "", recommendation: "", audience: "", usage: "", boundary: "", alternatives: [], relatedHref: "", featured: false, usedByVitamin: false, updatedAt: timestamp, visibility: "private", status: proposal.status, pinned: false, notes: "", source: "浏览器书签", sourceFolder: group.representative.sourceFolder, createdAt: group.representative.createdAt, importedAt: timestamp, importBatchId: context.row.id };
           const size = importJsonbBytes(resource) + (context.state.resources.length ? 2 : 0);
           if (context.state.resources.length >= MAX_RESOURCES || bytes + size > MAX_STORE_BYTES) { group.error = "资源库达到 20000 条或 32 MB 上限，未新增本项"; results.push({ groupId: group.id, status: "failed", resourceId: null, reason: group.error }); continue; }
           bytes += size; context.state.resources.unshift(resource); group.createdFingerprint = importHash(resource); group.outcome = { kind: "created", resourceId: resource.id, completedAt: timestamp }; group.readOnly = true; group.decision = "keep"; group.error = null; group.revision = String(BigInt(group.revision) + BigInt(1));
+          if (mode === "accept-preserving-manual") {
+            for (const key of proposal.adoptedFields) Object.assign(group.manualFields, { [key]: proposal.fields[key] });
+            group.fields = proposal.fields; group.categoryConfirmed = proposal.categoryConfirmed; updateIntent(context, group);
+          }
           results.push({ groupId: group.id, status: "created", resourceId: resource.id, reason: null });
         }
         return receipt(context, operation!, "commit", results, results.some(item => item.status === "created"));
